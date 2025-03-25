@@ -1,0 +1,81 @@
+/* You can add global styles to this file, and also import other style files */
+:root {
+  --main-bg-color: #1e1e1e;
+  --darker-black: #0f0f0f;
+  --lighter-black: #2e2e2e;
+  --title-color: white;
+  --text-color: #d6d6d6;
+  --link-color: #a1a1a1;
+  --secondary-text: #686868;
+  --font-family: "Helvetica", "Arial", "sans-serif";
+  --header-font-family:
+    "DejaVu Sans", "SF Pro Display", "Segoe UI Light", "sans-serif";
+  --logo-brightness: 100%;
+}
+
+@media (prefers-color-scheme: light) {
+  :root {
+    --title-color: #0f0f0f;
+    --text-color: #303030;
+    --link-color: #202020;
+    --main-bg-color: #f4f4f4;
+    --darker-black: #a1a1a1;
+    --logo-brightness: 90%;
+  }
+}
+
+body {
+  background-color: var(--main-bg-color);
+  font-family: var(--font-family);
+  color: var(--text-color);
+  padding: 0;
+  margin: 0;
+  min-height: 100vh;
+  display: flex;
+  flex-direction: column;
+}
+
+main {
+  margin: 0;
+}
+
+p,
+li {
+  font-size: 1.25rem;
+  line-height: 1.75rem;
+}
+
+a {
+  color: var(--link-color);
+  font-size: 1.25rem;
+}
+
+a:hover {
+  color: var(--title-color);
+  font-size: 1.25rem;
+}
+
+h1,
+h2,
+h3,
+h4,
+h5,
+h6 {
+  font-family: var(--header-font-family);
+  color: var(--title-color);
+}
+
+h1 {
+  font-size: 2.5rem;
+  font-weight: 100;
+}
+
+h2 {
+  font-weight: 600;
+  font-size: 2rem;
+}
+
+h3 {
+  font-weight: 400;
+  font-size: 1.5rem;
+}

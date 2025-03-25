@@ -1,0 +1,19 @@
+.tags {
+  display: inline;
+}
+
+.tag {
+  background-color: var(--lighter-black);
+
+  padding: 0 0.6rem;
+  border-radius: 5px;
+  margin-right: 0.4rem;
+  display: inline-block;
+  color: var(--secondary-text);
+  font-size: 0.9rem;
+}
+
+.tag:hover {
+  // background-color: var(--secondary-text);
+  color: var(--text-color);
+}

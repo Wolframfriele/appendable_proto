@@ -1,0 +1,15 @@
+ul {
+  list-style: none;
+  padding: 0;
+}
+
+@media only screen and (min-width: 1150px) {
+  .view {
+    width: 80rem;
+    transform: translateX(10rem);
+  }
+}
+
+.view {
+  margin: 0.8rem;
+}

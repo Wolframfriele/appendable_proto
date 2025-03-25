@@ -1,0 +1,8 @@
+<div class="view">
+    <h1>{{ title() }}</h1>
+    <ul>
+        @for (entry of viewEntries(); track $index) {
+            <app-outliner-entry [entry]="entry" />
+        }
+    </ul>
+</div>
