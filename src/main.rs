@@ -9,9 +9,9 @@ use axum::{
 use anyhow::Result;
 use std::sync::Arc;
 
-use track_be_proto_1::models::Entry;
+use track_proto::models::Entry;
 
-use track_be_proto_1::database::{add_todo, select_entry, set_done, todos, Database};
+use track_proto::database::{add_todo, select_entry, set_done, todos, Database};
 
 #[tokio::main]
 async fn main() -> Result<()> {

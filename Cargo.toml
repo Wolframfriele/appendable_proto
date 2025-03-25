@@ -1,5 +1,5 @@
 [package]
-name = "track_be_proto_1"
+name = "track_proto"
 version = "0.1.0"
 edition = "2021"
 
