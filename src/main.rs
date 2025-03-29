@@ -1,5 +1,5 @@
 use axum::{
-    extract::{Extension, Path},
+    extract::{Path, Query, State},
     http::StatusCode,
     response::{IntoResponse, Response},
     routing::{get, put},
@@ -7,9 +7,14 @@ use axum::{
 };
 
 use anyhow::Error;
+use chrono::{Local, NaiveDate};
+use serde::Deserialize;
 use std::sync::Arc;
 
-use track_proto::models::Entry;
+use track_proto::{
+    database::select_entries,
+    models::{Entry, EntryAndTags},
+};
 
 use track_proto::database::{add_todo, select_entry, set_done, todos, Database};
 
@@ -20,11 +25,12 @@ async fn main() {
     let state = Arc::new(Database::new().await.unwrap());
 
     let app = Router::new()
-        .route("/api/entries/{id}", get(get_entry))
+        .route("/api/entries", get(get_entries))
+        .route("/api/entries/{entry_id}", get(get_entry))
         .route("/api/todos", get(todos).post(add_todo))
         .route("/api/todos/{id}", put(set_done))
         .fallback(handler_404)
-        .layer(Extension(state));
+        .with_state(state);
 
     let listener = tokio::net::TcpListener::bind("0.0.0.0:3000").await.unwrap();
     axum::serve(listener, app).await.unwrap();
@@ -32,9 +38,23 @@ async fn main() {
 
 async fn get_entry(
     Path(entry_id): Path<i64>,
-    Extension(db): Extension<Arc<Database>>,
+    db: State<Arc<Database>>,
 ) -> Result<Json<Entry>, NotFountError> {
     Ok(Json(select_entry(&db, entry_id).await?))
+}
+
+#[derive(Deserialize)]
+struct GetEntriesParams {
+    date: Option<NaiveDate>,
+}
+
+async fn get_entries(
+    params: Query<GetEntriesParams>,
+    db: State<Arc<Database>>,
+) -> Result<Json<Vec<EntryAndTags>>, NotFountError> {
+    Ok(Json(
+        select_entries(&db, params.date.unwrap_or(Local::now().date_naive())).await,
+    ))
 }
 
 // Error handling
