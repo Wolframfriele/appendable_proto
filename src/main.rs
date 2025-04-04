@@ -1,5 +1,5 @@
 use axum::{
-    extract::{Path, Query, State},
+    extract::{Extension, Path, Query, State},
     http::StatusCode,
     response::{IntoResponse, Response},
     routing::{get, put},
@@ -16,7 +16,7 @@ use track_proto::{
     models::{Entry, EntryAndTags},
 };
 
-use track_proto::database::{add_todo, select_entry, set_done, todos, Database};
+use track_proto::database::{delete_entry, select_entry, update_entry, Database};
 
 #[tokio::main]
 async fn main() {
@@ -26,9 +26,7 @@ async fn main() {
 
     let app = Router::new()
         .route("/api/entries", get(get_entries))
-        .route("/api/entries/{entry_id}", get(get_entry))
-        .route("/api/todos", get(todos).post(add_todo))
-        .route("/api/todos/{id}", put(set_done))
+        .route("/api/entries/{entry_id}", get(get_entry).put(put_entry))
         .fallback(handler_404)
         .with_state(state);
 
@@ -55,6 +53,20 @@ async fn get_entries(
     Ok(Json(
         select_entries(&db, params.date.unwrap_or(Local::now().date_naive())).await,
     ))
+}
+
+async fn put_entry(
+    Path(entry_id): Path<i64>,
+    db: State<Arc<Database>>,
+    axum::extract::Json(payload): axum::extract::Json<Entry>,
+) -> impl IntoResponse {
+    if entry_id != payload.entry_id {
+        let error = "The entry_id in the URL does not match the entry_id in the request body";
+        println!("{error}");
+        return (StatusCode::BAD_REQUEST, error);
+    }
+    update_entry(&db, payload).await;
+    (StatusCode::ACCEPTED, "Entry updated")
 }
 
 // Error handling

@@ -1,11 +1,8 @@
-use crate::models::{Entry, EntryAndTags, Todo};
+use crate::models::{Entry, EntryAndTags};
 use anyhow::Result;
-use axum::extract::{Extension, Path};
-use axum::Json;
 use chrono::{Days, NaiveDate};
 use sqlx::sqlite::{SqlitePool, SqlitePoolOptions};
 use tracing::debug;
-use std::sync::Arc;
 
 pub struct Database {
     pool: SqlitePool,
@@ -36,7 +33,7 @@ SELECT entry_id, parent, path, nesting, start_timestamp, end_timestamp, text, sh
 
 pub async fn select_entries(db: &Database, date: NaiveDate) -> Vec<EntryAndTags> {
     println!("Selecting entries for: {:?}", date);
-        sqlx::query_as::<_, EntryAndTags>(        
+    sqlx::query_as::<_, EntryAndTags>(        
             "
 SELECT 
 	entries.entry_id, 
@@ -54,7 +51,6 @@ FULL OUTER JOIN tagged_entries ON entries.entry_id = tagged_entries.entry_fk
 FULL OUTER JOIN tags ON tagged_entries.tag_fk  = tags.tag_id
 WHERE entries.start_timestamp > ?1 AND entries.start_timestamp < ?2
 GROUP BY entries.entry_id;
-
             "
         )
         .bind(date)
@@ -63,30 +59,79 @@ GROUP BY entries.entry_id;
         .await.unwrap()
 } 
 
-pub async fn add_todo(Extension(db): Extension<Arc<Database>>, Json(todo): Json<Todo>) {
-    println!("Adding todo: {:?}", todo);
-    sqlx::query("INSERT INTO todos (description) VALUES (?);")
-        .bind(todo.description)
-        .execute(&db.pool)
-        .await
-        .unwrap();
-}
+pub async fn add_entry(db: &Database, entry: Entry) {
+    println!("Inserting new entry: {:?}", entry);
+    sqlx::query(
+        "
+UPDATE entries
+SET end_timestamp = '2025-03-11 10:09:20'
+WHERE entries.nesting >= 1 AND entries.end_timestamp IS NULL;
 
-pub async fn todos(Extension(db): Extension<Arc<Database>>) -> Json<Vec<Todo>> {
-    println!("Getting all todos");
-    Json(
-        sqlx::query_as::<_, Todo>("SELECT description, done FROM todos")
-            .fetch_all(&db.pool)
-            .await
-            .unwrap(),
+INSERT INTO entries
+(parent, path, nesting, start_timestamp, end_timestamp, text, show_todo, is_done, estimated_duration)
+VALUES
+(NULL, '/1/7/', 2, DATETIME('2025-03-11 10:09:20'), NULL, 'New entry', 0, 0, NULL);
+        "
     )
+        .execute(&db.pool)
+        .await.unwrap();
 }
 
-pub async fn set_done(Path(id): Path<i64>, Extension(db): Extension<Arc<Database>>) {
-    println!("Setting todo: {id} to done");
-    sqlx::query("UPDATE todos SET done = TRUE WHERE id = ?")
-        .bind(id)
+pub async fn update_entry(db: &Database, entry: Entry) {
+    println!("Update entry: {:?}", entry);
+    sqlx::query(
+        "
+UPDATE entries
+SET parent=?2, 
+    path=?3, 
+    nesting=?4, 
+    start_timestamp=?5, 
+    end_timestamp=?6, 
+    text=?7, 
+    show_todo=?8, 
+    is_done=?9, 
+    estimated_duration=?10
+WHERE entry_id=?1;
+        "
+    )
+        .bind(entry.entry_id)
+        .bind(entry.parent)
+        .bind(entry.path)
+        .bind(entry.nesting)
+        .bind(entry.start_timestamp)
+        .bind(entry.end_timestamp)
+        .bind(entry.text)
+        .bind(entry.show_todo)
+        .bind(entry.is_done)
+        .bind(entry.estimated_duration)
         .execute(&db.pool)
-        .await
-        .unwrap();
+        .await.unwrap();
 }
+
+// Need to double check if I actually need the entry_id for delete with children since
+// the path now should be full and also clasify the actual entry itself.
+// But I can always just ignore the entry_id (but that might be weird at times)
+pub async fn delete_entry(db: &Database, entry_id: i64, path: Option<&str>) {
+    if let Some(path) = path {
+        sqlx::query(
+            "
+DELETE FROM entries WHERE path LIKE '?1%';
+DELETE FROM entries WHERE entry_id = ?2;
+            "
+        )
+            .bind(path)
+            .bind(entry_id)
+            .execute(&db.pool)
+            .await.unwrap();
+    } else {
+        sqlx::query(
+            "
+DELETE FROM entries WHERE entry_id = ?1;
+            "
+        )
+            .bind(entry_id)
+            .execute(&db.pool)
+            .await.unwrap();
+    }
+}
+

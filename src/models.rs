@@ -70,10 +70,3 @@ pub struct Tag {
     pub name: String,
     pub archived: bool,
 }
-
-// Keep until done with latest endpoint that has a todo model
-#[derive(FromRow, Serialize, Deserialize, Debug)]
-pub struct Todo {
-    pub description: String,
-    pub done: bool,
-}
