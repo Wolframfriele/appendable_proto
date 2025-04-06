@@ -1,8 +1,8 @@
 use axum::{
-    extract::{Extension, Path, Query, State},
+    extract::{Path, Query, State},
     http::StatusCode,
     response::{IntoResponse, Response},
-    routing::{get, put},
+    routing::get,
     Json, Router,
 };
 
@@ -26,7 +26,10 @@ async fn main() {
 
     let app = Router::new()
         .route("/api/entries", get(get_entries))
-        .route("/api/entries/{entry_id}", get(get_entry).put(put_entry))
+        .route(
+            "/api/entries/{entry_id}",
+            get(get_entry).put(put_entry).delete(delete_entry_api),
+        )
         .fallback(handler_404)
         .with_state(state);
 
@@ -67,6 +70,23 @@ async fn put_entry(
     }
     update_entry(&db, payload).await;
     (StatusCode::ACCEPTED, "Entry updated")
+}
+
+#[derive(Deserialize)]
+struct DeleteEntrieParams {
+    with_children: Option<bool>,
+}
+
+async fn delete_entry_api(
+    Path(entry_id): Path<i64>,
+    params: Query<DeleteEntrieParams>,
+    db: State<Arc<Database>>,
+) -> impl IntoResponse {
+    if delete_entry(&db, entry_id, params.with_children.unwrap_or(false)).await {
+        (StatusCode::NO_CONTENT, "Entry deleted")
+    } else {
+        (StatusCode::CONFLICT, "The entry could not be deleted")
+    }
 }
 
 // Error handling

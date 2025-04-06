@@ -19,22 +19,32 @@ impl Database {
 
 pub async fn select_entry(db: &Database, entry_id: i64) -> Result<Entry> {
     debug!("Selecting entry: {:?}", entry_id);
-    Ok(
-        sqlx::query_as::<_, Entry>(        
-            "
-SELECT entry_id, parent, path, nesting, start_timestamp, end_timestamp, text, show_todo, is_done, estimated_duration FROM entries WHERE entries.entry_id = ?1;
-            "
-        )
-        .bind(entry_id)
-        .fetch_one(&db.pool)
-        .await?
+    Ok(sqlx::query_as::<_, Entry>(
+        "
+SELECT 
+    entry_id, 
+    parent, 
+    path, 
+    nesting, 
+    start_timestamp, 
+    end_timestamp, 
+    text, 
+    show_todo, 
+    is_done, 
+    estimated_duration 
+FROM entries 
+WHERE entries.entry_id = ?1;
+            ",
     )
+    .bind(entry_id)
+    .fetch_one(&db.pool)
+    .await?)
 }
 
 pub async fn select_entries(db: &Database, date: NaiveDate) -> Vec<EntryAndTags> {
     println!("Selecting entries for: {:?}", date);
-    sqlx::query_as::<_, EntryAndTags>(        
-            "
+    sqlx::query_as::<_, EntryAndTags>(
+        "
 SELECT 
 	entries.entry_id, 
 	entries.parent, 
@@ -51,13 +61,17 @@ FULL OUTER JOIN tagged_entries ON entries.entry_id = tagged_entries.entry_fk
 FULL OUTER JOIN tags ON tagged_entries.tag_fk  = tags.tag_id
 WHERE entries.start_timestamp > ?1 AND entries.start_timestamp < ?2
 GROUP BY entries.entry_id;
-            "
-        )
-        .bind(date)
-        .bind(date.checked_add_days(Days::new(1)).expect("Could not add a day to the input date"))
-        .fetch_all(&db.pool)
-        .await.unwrap()
-} 
+            ",
+    )
+    .bind(date)
+    .bind(
+        date.checked_add_days(Days::new(1))
+            .expect("Could not add a day to the input date"),
+    )
+    .fetch_all(&db.pool)
+    .await
+    .unwrap()
+}
 
 pub async fn add_entry(db: &Database, entry: Entry) {
     println!("Inserting new entry: {:?}", entry);
@@ -92,46 +106,47 @@ SET parent=?2,
     is_done=?9, 
     estimated_duration=?10
 WHERE entry_id=?1;
-        "
+        ",
     )
-        .bind(entry.entry_id)
-        .bind(entry.parent)
-        .bind(entry.path)
-        .bind(entry.nesting)
-        .bind(entry.start_timestamp)
-        .bind(entry.end_timestamp)
-        .bind(entry.text)
-        .bind(entry.show_todo)
-        .bind(entry.is_done)
-        .bind(entry.estimated_duration)
-        .execute(&db.pool)
-        .await.unwrap();
+    .bind(entry.entry_id)
+    .bind(entry.parent)
+    .bind(entry.path)
+    .bind(entry.nesting)
+    .bind(entry.start_timestamp)
+    .bind(entry.end_timestamp)
+    .bind(entry.text)
+    .bind(entry.show_todo)
+    .bind(entry.is_done)
+    .bind(entry.estimated_duration)
+    .execute(&db.pool)
+    .await
+    .unwrap();
 }
 
-// Need to double check if I actually need the entry_id for delete with children since
-// the path now should be full and also clasify the actual entry itself.
-// But I can always just ignore the entry_id (but that might be weird at times)
-pub async fn delete_entry(db: &Database, entry_id: i64, path: Option<&str>) {
-    if let Some(path) = path {
+pub async fn delete_entry(db: &Database, entry_id: i64, with_children: bool) -> bool {
+    if with_children {
+        println!("Deleting with children for entry: {entry_id}");
         sqlx::query(
             "
-DELETE FROM entries WHERE path LIKE '?1%';
-DELETE FROM entries WHERE entry_id = ?2;
-            "
+DELETE FROM entries WHERE path LIKE (
+    SELECT CONCAT(path, '%') FROM entries WHERE entry_id = ?1
+);
+            ",
         )
-            .bind(path)
-            .bind(entry_id)
-            .execute(&db.pool)
-            .await.unwrap();
+        .bind(entry_id)
+        .execute(&db.pool)
+        .await
+        .is_ok()
     } else {
+        println!("Safe deleting entry: {entry_id}");
         sqlx::query(
             "
 DELETE FROM entries WHERE entry_id = ?1;
-            "
+            ",
         )
-            .bind(entry_id)
-            .execute(&db.pool)
-            .await.unwrap();
+        .bind(entry_id)
+        .execute(&db.pool)
+        .await
+        .is_ok()
     }
 }
-
