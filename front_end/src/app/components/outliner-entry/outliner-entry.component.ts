@@ -33,14 +33,14 @@ export class OutlinerEntryComponent implements AfterViewInit {
   isMultiLine = signal(false);
 
   displayTime: Signal<boolean> = computed(() => {
-    if (this.entry().indent === 0 || this.entryIsHovered()) {
+    if (this.entry().nesting === 0 || this.entryIsHovered()) {
       return true;
     }
     return false;
   });
 
   indentArray: Signal<number[]> = computed(() => {
-    return Array(this.entry().indent)
+    return Array(this.entry().nesting)
       .fill(0)
       .map((x, i) => i);
   });
@@ -50,7 +50,7 @@ export class OutlinerEntryComponent implements AfterViewInit {
     // if (this.entry().showTodo) {
     //   startWidth = startWidth - 1.6;
     // }
-    startWidth = startWidth - this.entry().indent * 1.5;
+    startWidth = startWidth - this.entry().nesting * 1.5;
     return `${startWidth}rem`;
   });
 

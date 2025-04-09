@@ -1,6 +1,6 @@
 <li>
   <time [ngStyle]="{ opacity: displayTime() ? '100' : '0' }">{{
-    entry().startTime | displayTime
+    entry().startTimestamp| displayTime
   }}</time>
 
   @for (number of indentArray(); track $index) {
@@ -38,9 +38,9 @@
     </div>
     <app-duration-estimate
       class="duration-component"
-      [startTime]="entry().startTime"
-      [endTime]="entry().endTime"
-      [estimate]="entry().estimate"
+      [startTime]="entry().startTimestamp"
+      [endTime]="entry().endTimestamp"
+      [estimate]="entry().estimatedDuration"
     />
     <app-display-tags
       class="tags"

@@ -1,11 +1,13 @@
 export type EntryModel = {
-    id: number;
-    startTime: Date;
-    endTime: Date | undefined;
-    text: String;
-    showTodo: boolean;
-    isDone: boolean;
-    estimate: number | undefined;
-    tags: string[];
-    indent: number;
+  id: number;
+  parent: number | undefined;
+  path: string;
+  nesting: number;
+  startTimestamp: Date;
+  endTimestamp: Date | undefined;
+  text: String;
+  showTodo: boolean;
+  isDone: boolean;
+  estimatedDuration: number | undefined;
+  tags: string[];
 }
