@@ -1,8 +1,7 @@
-use crate::models::{Entry, EntryAndTags};
+use crate::models::{Entry, EntryAndTags, ResultEntry};
 use anyhow::Result;
 use chrono::{Days, NaiveDate};
 use sqlx::sqlite::{SqlitePool, SqlitePoolOptions};
-use tracing::debug;
 
 pub struct Database {
     pool: SqlitePool,
@@ -17,8 +16,102 @@ impl Database {
     }
 }
 
+pub async fn insert_entry(db: &Database, entry: Entry) -> Result<Entry> {
+    println!("Inserting new entry: {:?}", entry);
+
+    let parent_entry = if entry.parent.is_some() {
+        sqlx::query_as::<_, (String, i64)>(
+            "
+UPDATE entries
+SET end_timestamp = ?1
+WHERE entries.nesting >= ?2 AND entries.end_timestamp IS NULL;
+
+SELECT entries.path, entries.nesting FROM entries
+WHERE entries.entry_id = ?3;
+       ",
+        )
+        .bind(entry.end_timestamp)
+        .bind(entry.nesting)
+        .bind(entry.parent)
+        .fetch_one(&db.pool)
+        .await?
+    } else {
+        (String::from("/"), 0)
+    };
+    println!("{:?}", parent_entry);
+
+    let new_entry_id = sqlx::query_as::<_, ResultEntry>(
+        "
+INSERT INTO entries (
+        parent,
+        path,
+        start_timestamp,
+        text,
+        show_todo,
+        is_done,
+        estimated_duration
+    ) VALUES (
+        ?1,
+        '',
+        ?2,
+        '',
+        0,
+        0,
+        0
+    ) RETURNING entry_id;
+        ",
+    )
+    .bind(entry.parent)
+    .bind(entry.start_timestamp)
+    .fetch_one(&db.pool)
+    .await?;
+
+    println!("{:?}", new_entry_id);
+
+    Ok(sqlx::query_as::<_, Entry>(
+        "
+UPDATE entries SET
+    parent=?2, 
+    path=?3, 
+    nesting=?4, 
+    start_timestamp=?5, 
+    end_timestamp=?6, 
+    text=?7, 
+    show_todo=?8, 
+    is_done=?9, 
+    estimated_duration=?10
+WHERE entry_id=?1;
+
+SELECT 
+    entry_id, 
+    parent, 
+    path, 
+    nesting, 
+    start_timestamp, 
+    end_timestamp, 
+    text, 
+    show_todo, 
+    is_done, 
+    estimated_duration 
+FROM entries WHERE entry_id = ?1;
+        ",
+    )
+    .bind(new_entry_id.entry_id)
+    .bind(entry.parent)
+    .bind(format!("{}{}/", parent_entry.0, new_entry_id.entry_id))
+    .bind(parent_entry.1 + 1)
+    .bind(entry.start_timestamp)
+    .bind(entry.end_timestamp)
+    .bind(entry.text)
+    .bind(entry.show_todo)
+    .bind(entry.is_done)
+    .bind(entry.estimated_duration)
+    .fetch_one(&db.pool)
+    .await?)
+}
+
 pub async fn select_entry(db: &Database, entry_id: i64) -> Result<Entry> {
-    debug!("Selecting entry: {:?}", entry_id);
+    println!("Selecting entry: {:?}", entry_id);
     Ok(sqlx::query_as::<_, Entry>(
         "
 SELECT 
@@ -32,7 +125,7 @@ SELECT
     show_todo, 
     is_done, 
     estimated_duration 
-FROM entries 
+FROM entries
 WHERE entries.entry_id = ?1;
             ",
     )
@@ -95,8 +188,8 @@ pub async fn update_entry(db: &Database, entry: Entry) {
     println!("Update entry: {:?}", entry);
     sqlx::query(
         "
-UPDATE entries
-SET parent=?2, 
+UPDATE entries SET 
+    parent=?2, 
     path=?3, 
     nesting=?4, 
     start_timestamp=?5, 

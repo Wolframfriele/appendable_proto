@@ -70,3 +70,8 @@ pub struct Tag {
     pub name: String,
     pub archived: bool,
 }
+
+#[derive(FromRow, Serialize, Deserialize, Debug)]
+pub struct ResultEntry {
+    pub entry_id: i64,
+}

@@ -16,7 +16,7 @@ use track_proto::{
     models::{Entry, EntryAndTags},
 };
 
-use track_proto::database::{delete_entry, select_entry, update_entry, Database};
+use track_proto::database::{delete_entry, insert_entry, select_entry, update_entry, Database};
 
 #[tokio::main]
 async fn main() {
@@ -25,7 +25,7 @@ async fn main() {
     let state = Arc::new(Database::new().await.unwrap());
 
     let app = Router::new()
-        .route("/api/entries", get(get_entries))
+        .route("/api/entries", get(get_entries).post(post_entry))
         .route(
             "/api/entries/{entry_id}",
             get(get_entry).put(put_entry).delete(delete_entry_api),
@@ -56,6 +56,13 @@ async fn get_entries(
     Ok(Json(
         select_entries(&db, params.date.unwrap_or(Local::now().date_naive())).await,
     ))
+}
+
+async fn post_entry(
+    db: State<Arc<Database>>,
+    axum::extract::Json(payload): axum::extract::Json<Entry>,
+) -> Result<Json<Entry>, NotFountError> {
+    Ok(Json(insert_entry(&db, payload).await?))
 }
 
 async fn put_entry(
