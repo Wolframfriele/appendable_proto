@@ -27,8 +27,13 @@ import { DisplayTagsComponent } from "../display-tags/display-tags.component";
 })
 export class OutlinerEntryComponent implements AfterViewInit {
   entry = input.required<EntryModel>();
+  hasChildren = input.required<boolean>();
   entryIsHovered = signal(false);
   isMultiLine = signal(false);
+
+  displayLineUnderBullet: Signal<boolean> = computed(() => {
+    return this.hasChildren() || this.isMultiLine()
+  })
 
   displayTime: Signal<boolean> = computed(() => {
     if (this.entry().nesting === 0 || this.entryIsHovered()) {
@@ -45,9 +50,6 @@ export class OutlinerEntryComponent implements AfterViewInit {
 
   textWidth: Signal<string> = computed(() => {
     let startWidth = 45;
-    // if (this.entry().showTodo) {
-    //   startWidth = startWidth - 1.6;
-    // }
     startWidth = startWidth - this.entry().nesting * 1.5;
     return `${startWidth}rem`;
   });
@@ -56,10 +58,6 @@ export class OutlinerEntryComponent implements AfterViewInit {
     console.log(`Toggle checkbox for entry ${this.entry().id} to ${value}`);
   }
 
-  // I not only need to check if the element is multiline but also if the
-  // element has child elements. If there are no child elements, and the element is not
-  // multiline the line should be hidden.
-  // The simplest would be to see if the next element is of a higher nesting level or equal.
   calculateIsMultiLine() {
     const textBox = document.getElementById(this.entry().id.toString());
     if (textBox !== undefined && textBox !== null) {

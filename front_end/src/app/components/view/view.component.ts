@@ -29,6 +29,15 @@ export class ViewComponent implements OnInit {
     tags: []
   };
 
+  hasChildren(idx: number): boolean {
+    let nextIdx = idx + 1;
+    if (nextIdx >= this.viewEntries().length) {
+      return false;
+    }
+
+    return this.viewEntries()[nextIdx].nesting > this.viewEntries()[idx].nesting;
+  }
+
   ngOnInit(): void {
     this.entryService.getEntries(this.date())
       .pipe(

@@ -1,77 +1,80 @@
-li {
+.root-node-info {
+  width: 100%;
+  margin: 1.5rem 0 0.2rem 0;
+  display: flex;
+  align-items: center;
+
+  time {
+    font-family: var(--font-family);
+    color: var(--secondary-text);
+    font-weight: 600;
+    font-size: 1rem;
+    margin-right: 1rem;
+    transform: translateY(0.05rem);
+  }
+
+  .duration-component {
+    margin-right: 1rem;
+    display: inline-block;
+  }
+
+  .tags {
+    max-width: 10rem;
+  }
+}
+
+.text-elements-container {
   display: flex;
   flex-wrap: wrap;
   justify-content: flex-start;
   align-items: stretch;
   gap: 0.5rem;
+
+  .line {
+    border-left: 1px solid var(--secondary-text);
+    margin-top: 1rem;
+    margin-left: 1rem;
+  }
+
+  .dot {
+    height: 0.5rem;
+    width: 0.5rem;
+    background-color: var(--secondary-text);
+    border-radius: 50%;
+    margin-left: -0.75rem;
+    margin-top: 0.75rem;
+    margin-right: 0.5rem;
+    float: left;
+  }
+
+  .leading-line {
+    border-left: 1px solid var(--secondary-text);
+    margin-left: 1rem;
+  }
+
+  .bullet {
+    height: 100%;
+  }
+
+  .checkbox {
+    transform: translateY(0.15rem);
+    margin-right: 0.5rem;
+  }
+
+  .text-container {
+    padding: 0;
+    padding: 3px 0.5rem;
+    width: 100%;
+    min-height: 1.5rem;
+
+    .text {
+      display: inline;
+    }
+  }
+
+  .text-container:hover {
+    background-color: var(--lighter-black);
+    border-radius: 5px;
+  }
 }
 
-time {
-  color: var(--secondary-text);
-  font-weight: 600;
-  font-size: 0.95rem;
-  transform: translateY(0.15rem);
-}
-
-.line {
-  border-left: 1px solid var(--secondary-text);
-  margin-top: 1rem;
-  margin-left: 1rem;
-}
-
-.dot {
-  height: 0.5rem;
-  width: 0.5rem;
-  background-color: var(--secondary-text);
-  border-radius: 50%;
-  margin-left: -0.75rem;
-  margin-top: 0.75rem;
-  margin-right: 0.5rem;
-  float: left;
-}
-
-.leading-line {
-  border-left: 1px solid var(--secondary-text);
-  margin-left: 1rem;
-}
-
-.bullet {
-  height: 100%;
-}
-
-.checkbox {
-  transform: translateY(0.15rem);
-  margin-right: 0.5rem;
-}
-
-.text-elements-container {
-  width: 50rem;
-  padding: 3px 0.5rem;
-  display: flex;
-  align-items: center;
-}
-
-.text-elements-container:hover {
-  background-color: var(--lighter-black);
-  border-radius: 5px;
-  padding: 3px 0.5rem;
-}
-
-.text-container {
-  padding: 0;
-  margin-right: 0.5rem;
-}
-
-.text {
-  display: inline;
-  outline: none;
-}
-
-.duration-component {
-  margin-right: 0.5rem;
-  display: inline-block;
-}
-
-.tags {
-  max-width: 10rem;
-}

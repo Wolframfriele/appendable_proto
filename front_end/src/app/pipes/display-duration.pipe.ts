@@ -13,7 +13,7 @@ export class DisplayDurationPipe implements PipeTransform {
    */
   transform(minutes: number | undefined): string {
     if (minutes === undefined) {
-      return '';
+      return '0';
     }
 
     const days = Math.floor(minutes / 3600);
@@ -29,6 +29,9 @@ export class DisplayDurationPipe implements PipeTransform {
     }
     if (minutes > 0) {
       result = result + `${minutesRemainder}m `;
+    }
+    if (result === '') {
+      return '0m';
     }
     return result.trim();
   }

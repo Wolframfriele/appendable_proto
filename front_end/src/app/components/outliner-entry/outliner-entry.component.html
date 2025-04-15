@@ -1,18 +1,21 @@
 <li>
-  <time [ngStyle]="{ opacity: displayTime() ? '100' : '0' }">{{
-    entry().startTimestamp| displayTime
-  }}</time>
+  @if (entry().parent === null) {
+    <div class="root-node-info">
+      <time>{{entry().startTimestamp| displayTime}}</time>
 
-  @for (number of indentArray(); track $index) {
-    <span class="leading-line"></span>
+      <app-duration-estimate
+        class="duration-component"
+        [startTime]="entry().startTimestamp"
+        [endTime]="entry().endTimestamp"
+        [estimate]="entry().estimatedDuration"
+      />
+
+      <app-display-tags
+        class="tags"
+        [tags]="entry().tags"
+      />
+    </div>
   }
-
-  <span
-    class="line"
-    [ngStyle]="{ opacity: isMultiLine() ? '100' : '0' }"
-  ></span>
-
-  <span class="dot"></span>
 
   <div
     class="text-elements-container"
@@ -20,6 +23,17 @@
     (mouseover)="entryIsHovered.set(true)"
     (mouseleave)="entryIsHovered.set(false)"
   >
+    @for (number of indentArray(); track $index) {
+      <span class="leading-line"></span>
+    }
+
+    <span
+      class="line"
+      [ngStyle]="{ opacity: displayLineUnderBullet() ? '100' : '0' }"
+    ></span>
+
+    <span class="dot"></span>
+
     <div class="text-container" [ngStyle]="{ 'max-width': textWidth() }">
       @if (entry().showTodo) {
         <app-checkbox
@@ -27,7 +41,15 @@
           [checked]="entry().isDone"
           (checkedToggle)="onCheckboxToggled($event)"
         />
+
+        <app-duration-estimate
+          class="duration-component"
+          [startTime]="entry().startTimestamp"
+          [endTime]="entry().endTimestamp"
+          [estimate]="entry().estimatedDuration"
+        />
       }
+
       <div
         class="text"
         [contentEditable]="true"
@@ -36,16 +58,5 @@
         {{ entry().text }}
       </div>
     </div>
-    <app-duration-estimate
-      class="duration-component"
-      [startTime]="entry().startTimestamp"
-      [endTime]="entry().endTimestamp"
-      [estimate]="entry().estimatedDuration"
-    />
-    <app-display-tags
-      class="tags"
-      [tags]="entry().tags"
-      [ngStyle]="{ opacity: entryIsHovered() ? '100' : '0' }"
-    />
   </div>
 </li>
