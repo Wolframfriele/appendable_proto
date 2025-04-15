@@ -8,5 +8,5 @@ import { ViewComponent } from '../../components/view/view.component';
   styleUrl: './outliner.component.scss'
 })
 export class OutlinerComponent {
-  dates = ['Friday 14 Februari', 'Saturday 15 Februari'];
+  dates: Date[] = [new Date(), new Date("2025-03-11")];
 }

@@ -1,5 +1,4 @@
 import {
-  AfterContentInit,
   AfterViewInit,
   Component,
   computed,
@@ -13,7 +12,6 @@ import { CheckboxComponent } from "../checkbox/checkbox.component";
 import { NgStyle } from "@angular/common";
 import { DurationEstimateComponent } from "../duration-estimate/duration-estimate.component";
 import { DisplayTagsComponent } from "../display-tags/display-tags.component";
-import { startWith } from "rxjs";
 
 @Component({
   selector: "app-outliner-entry",
@@ -58,11 +56,15 @@ export class OutlinerEntryComponent implements AfterViewInit {
     console.log(`Toggle checkbox for entry ${this.entry().id} to ${value}`);
   }
 
+  // I not only need to check if the element is multiline but also if the
+  // element has child elements. If there are no child elements, and the element is not
+  // multiline the line should be hidden.
+  // The simplest would be to see if the next element is of a higher nesting level or equal.
   calculateIsMultiLine() {
     const textBox = document.getElementById(this.entry().id.toString());
     if (textBox !== undefined && textBox !== null) {
       const textBoxHeight: number = +textBox.offsetHeight;
-      if (textBoxHeight > 40) {
+      if (textBoxHeight > 50) {
         return true;
       }
     }

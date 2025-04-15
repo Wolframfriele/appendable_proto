@@ -1,1 +1,3 @@
-<div class="duration">{{ displayDuration() }} </div>
+@if (displayDuration()) {
+  <div class="duration">{{ formatDuration() }} </div>
+}

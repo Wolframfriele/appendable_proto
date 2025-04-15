@@ -9,7 +9,7 @@ li {
 time {
   color: var(--secondary-text);
   font-weight: 600;
-  font-size: 1rem;
+  font-size: 0.95rem;
   transform: translateY(0.15rem);
 }
 
@@ -45,14 +45,14 @@ time {
 }
 
 .text-elements-container {
-  width: 70rem;
+  width: 50rem;
   padding: 3px 0.5rem;
   display: flex;
   align-items: center;
 }
 
 .text-elements-container:hover {
-  background-color: var(--lig);
+  background-color: var(--lighter-black);
   border-radius: 5px;
   padding: 3px 0.5rem;
 }
