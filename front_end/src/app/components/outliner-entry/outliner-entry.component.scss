@@ -67,8 +67,13 @@
     width: 100%;
     min-height: 1.5rem;
 
+    .duration-component {
+      margin-right: 0.5rem;
+    }
+
     .text {
       display: inline;
+      outline: none;
     }
   }
 

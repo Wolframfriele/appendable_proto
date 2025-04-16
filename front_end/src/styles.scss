@@ -7,6 +7,9 @@
   --text-color: #d6d6d6;
   --link-color: #a1a1a1;
   --secondary-text: #686868;
+  --hover-text: #f6f6f6;
+  --active-text: #d6d6d6;
+  --active-color: #686868;
   --font-family: "Helvetica", "Arial", "sans-serif";
   --header-font-family:
     "DejaVu Sans", "SF Pro Display", "Segoe UI Light", "sans-serif";
@@ -15,11 +18,16 @@
 
 @media (prefers-color-scheme: light) {
   :root {
+    --main-bg-color: #f4f4f4;
+    --darker-black: #a1a1a1;
+    --lighter-black: #CFCFCF;
     --title-color: #0f0f0f;
     --text-color: #303030;
     --link-color: #202020;
-    --main-bg-color: #f4f4f4;
-    --darker-black: #a1a1a1;
+    --secondary-text: #686868;
+    --hover-text: #f4f4f4;
+    --active-text: #cccccc;
+    --active-color: #686868;
     --logo-brightness: 90%;
   }
 }
