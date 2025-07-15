@@ -7,9 +7,9 @@ use axum::{
 };
 
 use anyhow::Error;
-use chrono::{Local, NaiveDate};
+use chrono::{Local, NaiveDateTime, NaiveTime};
 use serde::Deserialize;
-use std::sync::Arc;
+use std::{str::FromStr, sync::Arc};
 
 use track_proto::{
     database::select_entries,
@@ -46,7 +46,8 @@ async fn get_entry(
 
 #[derive(Deserialize)]
 struct GetEntriesParams {
-    date: Option<NaiveDate>,
+    start: Option<NaiveDateTime>,
+    end: Option<NaiveDateTime>,
 }
 
 async fn get_entries(
@@ -54,7 +55,20 @@ async fn get_entries(
     db: State<Arc<Database>>,
 ) -> Result<Json<Vec<EntryAndTags>>, NotFountError> {
     Ok(Json(
-        select_entries(&db, params.date.unwrap_or(Local::now().date_naive())).await,
+        select_entries(
+            &db,
+            params.start.unwrap_or(
+                Local::now()
+                    .date_naive()
+                    .and_time(NaiveTime::from_hms_opt(0, 0, 0).expect("Valid start time")),
+            ),
+            params.end.unwrap_or(
+                Local::now()
+                    .date_naive()
+                    .and_time(NaiveTime::from_hms_opt(23, 59, 59).expect("Valid end time")),
+            ),
+        )
+        .await,
     ))
 }
 

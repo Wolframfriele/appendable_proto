@@ -1,6 +1,6 @@
 use crate::models::{Entry, EntryAndTags, ResultEntry};
 use anyhow::Result;
-use chrono::{Days, NaiveDate};
+use chrono::NaiveDateTime;
 use sqlx::sqlite::{SqlitePool, SqlitePoolOptions};
 
 pub struct Database {
@@ -23,7 +23,7 @@ pub async fn insert_entry(db: &Database, entry: Entry) -> Result<Entry> {
         sqlx::query_as::<_, (String, i64)>(
             "
 UPDATE entries
-SET end_timestamp = ?1
+SET end_timestamp = DATETIME(?1)
 WHERE entries.nesting >= ?2 AND entries.end_timestamp IS NULL;
 
 SELECT entries.path, entries.nesting FROM entries
@@ -53,7 +53,7 @@ INSERT INTO entries (
     ) VALUES (
         ?1,
         '',
-        ?2,
+        DATETIME(?2),
         '',
         0,
         0,
@@ -74,7 +74,7 @@ UPDATE entries SET
     parent=?2, 
     path=?3, 
     nesting=?4, 
-    start_timestamp=?5, 
+    start_timestamp=DATETIME(?5), 
     end_timestamp=?6, 
     text=?7, 
     show_todo=?8, 
@@ -134,54 +134,37 @@ WHERE entries.entry_id = ?1;
     .await?)
 }
 
-pub async fn select_entries(db: &Database, date: NaiveDate) -> Vec<EntryAndTags> {
-    println!("Selecting entries for: {:?}", date);
+pub async fn select_entries(
+    db: &Database,
+    start: NaiveDateTime,
+    end: NaiveDateTime,
+) -> Vec<EntryAndTags> {
+    println!("Selecting between: {:?} and {:?}", start, end);
     sqlx::query_as::<_, EntryAndTags>(
         "
 SELECT 
-	entries.entry_id, 
-	entries.parent, 
-	entries.path, 
-	entries.nesting, 
-	entries.start_timestamp, 
-	entries.end_timestamp, 
-	entries.text, 
-	entries.show_todo, 
-	entries.is_done, 
-	entries.estimated_duration , 
-	COALESCE(GROUP_CONCAT(tags.name, ', '), '') AS tags FROM entries
+    entries.entry_id, 
+    entries.parent, 
+    entries.path, 
+    entries.nesting, 
+    entries.start_timestamp, 
+    entries.end_timestamp, 
+    entries.text, 
+    entries.show_todo, 
+    entries.is_done, 
+    entries.estimated_duration , 
+    COALESCE(GROUP_CONCAT(tags.name, ', '), '') AS tags FROM entries
 FULL OUTER JOIN tagged_entries ON entries.entry_id = tagged_entries.entry_fk
 FULL OUTER JOIN tags ON tagged_entries.tag_fk  = tags.tag_id
-WHERE entries.start_timestamp > ?1 AND entries.start_timestamp < ?2
+WHERE entries.start_timestamp > DATETIME(?1) AND entries.start_timestamp < DATETIME(?2)
 GROUP BY entries.entry_id;
             ",
     )
-    .bind(date)
-    .bind(
-        date.checked_add_days(Days::new(1))
-            .expect("Could not add a day to the input date"),
-    )
+    .bind(start)
+    .bind(end)
     .fetch_all(&db.pool)
     .await
     .unwrap()
-}
-
-pub async fn add_entry(db: &Database, entry: Entry) {
-    println!("Inserting new entry: {:?}", entry);
-    sqlx::query(
-        "
-UPDATE entries
-SET end_timestamp = '2025-03-11 10:09:20'
-WHERE entries.nesting >= 1 AND entries.end_timestamp IS NULL;
-
-INSERT INTO entries
-(parent, path, nesting, start_timestamp, end_timestamp, text, show_todo, is_done, estimated_duration)
-VALUES
-(NULL, '/1/7/', 2, DATETIME('2025-03-11 10:09:20'), NULL, 'New entry', 0, 0, NULL);
-        "
-    )
-        .execute(&db.pool)
-        .await.unwrap();
 }
 
 pub async fn update_entry(db: &Database, entry: Entry) {
