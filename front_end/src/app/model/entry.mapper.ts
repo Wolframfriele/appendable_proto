@@ -34,7 +34,7 @@ export function mapToJsonEntry(entry: Entry): EntryJson {
     parent: entry.parent,
     path: entry.path,
     nesting: entry.nesting,
-    start_timestamp: entry.startTimestamp.getTime().toString(),
+    start_timestamp: entry.startTimestamp.toISOString(),
     end_timestamp: mapToNullableDate(entry.endTimestamp),
     text: entry.text,
     show_todo: entry.showTodo,
@@ -45,7 +45,8 @@ export function mapToJsonEntry(entry: Entry): EntryJson {
 
 function mapToNullableDate(optionalDate: Date | undefined): string | undefined {
   if (optionalDate) {
-    return optionalDate.getTime().toString();
+    return optionalDate.toISOString();
   }
   return undefined;
 }
+

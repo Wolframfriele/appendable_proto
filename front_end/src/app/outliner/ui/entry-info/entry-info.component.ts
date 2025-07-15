@@ -1,25 +1,23 @@
 import { Component, input } from '@angular/core';
 import { DisplayTimePipe } from '../../../pipes/display-time.pipe';
-import { DurationEstimateComponent } from '../duration-estimate/duration-estimate.component';
 import { DisplayTagsComponent } from '../display-tags/display-tags.component';
-import { Entry } from '../../../model/entry.model';
+import { DurationVsEstimateComponent } from '../../../shared/ui/duration-vs-estimate/duration-vs-estimate.component';
 
 @Component({
   selector: 'app-entry-info',
-  imports: [DisplayTimePipe, DurationEstimateComponent, DisplayTagsComponent],
+  imports: [DisplayTimePipe, DurationVsEstimateComponent, DisplayTagsComponent],
   template: `
     <div class="entry-info">
-      <time>{{entry().startTimestamp| displayTime}}</time>
+      <time>{{ startTime() | displayTime }}</time>
 
-      <app-duration-estimate
+      <app-duration-vs-estimate
         class="duration-component"
-        [startTime]="entry().startTimestamp"
-        [endTime]="entry().endTimestamp"
-        [estimate]="entry().estimatedDuration"
+        [duration]="duration()"
+        [estimate]="estimate()"
       />
 
       <app-display-tags
-        [tags]="entry().tags"
+        [tags]="tags()"
       />
     </div>
   `,
@@ -47,5 +45,8 @@ import { Entry } from '../../../model/entry.model';
   `
 })
 export class EntryInfoComponent {
-  entry = input.required<Entry>();
+  startTime = input.required<Date>();
+  duration = input.required<number>();
+  estimate = input.required<number | undefined>();
+  tags = input.required<string[]>();
 }

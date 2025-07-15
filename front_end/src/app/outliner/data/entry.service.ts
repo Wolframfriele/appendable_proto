@@ -35,21 +35,37 @@ export class EntryService {
 
   // sources
   add$ = new Subject<Entry>();
+  edit$ = new Subject<Entry>();
+  remove$ = new Subject<Entry>();
 
   entryAdded$ = this.add$.pipe(
     concatMap((addEntry) => {
+      addEntry.startTimestamp = new Date();
       const headers = new HttpHeaders({ 'Content-Type': 'application/json' });
       const body = mapToJsonEntry(addEntry);
 
+      console.log(`New entry: with text: ${addEntry.text}`);
       return this.http
         .post(`/api/entries`, body, { headers })
         .pipe(catchError((err) => this.handleError(err)));
     })
   );
 
+  entryEdited$ = this.edit$.pipe(
+    concatMap((editEntry) => {
+      const headers = new HttpHeaders({ 'Content-Type': 'application/json' });
+      const body = mapToJsonEntry(editEntry);
+
+      console.log(`Edit entry: id: ${editEntry.id} changed txt to: ${editEntry.text}`);
+      return this.http
+        .put(`/api/entries/${editEntry.id}`, body, { headers })
+        .pipe(catchError((err) => this.handleError(err)));
+    })
+  );
+
   constructor() {
     // reducers
-    merge(this.entryAdded$, this.dateRangeService.dateRangeExpanded$)
+    merge(this.entryAdded$, this.entryEdited$, this.dateRangeService.dateRangeExpanded$)
       .pipe(
         startWith(null),
         switchMap(() =>

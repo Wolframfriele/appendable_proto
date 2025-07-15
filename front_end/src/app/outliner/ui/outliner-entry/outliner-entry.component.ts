@@ -2,6 +2,7 @@ import {
   Component,
   computed,
   effect,
+  inject,
   input,
   model,
   signal,
@@ -9,33 +10,40 @@ import {
 } from "@angular/core";
 import { CheckboxComponent } from "../checkbox/checkbox.component";
 import { NgStyle } from "@angular/common";
-import { DurationEstimateComponent } from "../duration-estimate/duration-estimate.component";
 import { FormsModule } from '@angular/forms';
 import { ContenteditableDirective } from "../../../model/contenteditable.model";
 import { Entry } from "../../../model/entry.model";
 import { EntryInfoComponent } from "../entry-info/entry-info.component";
+import { DurationVsEstimateComponent } from "../../../shared/ui/duration-vs-estimate/duration-vs-estimate.component";
+import { EntryService } from "../../data/entry.service";
 
 @Component({
   selector: "app-outliner-entry",
   standalone: true,
   imports: [
     CheckboxComponent,
-    DurationEstimateComponent,
+    DurationVsEstimateComponent,
     NgStyle,
     FormsModule,
     ContenteditableDirective,
     EntryInfoComponent
   ],
   template: `
-    <li [id]="entry().id">
+    <li>
       @if (entry().parent === null) {
-        <app-entry-info [entry]="entry()"></app-entry-info>
+        <app-entry-info
+          [startTime]="entry().startTimestamp"
+          [duration]="duration()"
+          [estimate]="entry().estimatedDuration"
+          [tags]="entry().tags"
+        ></app-entry-info>
       }
 
       <div
         class="text-elements-container"
         (mouseover)="entryIsHovered.set(true)"
         (mouseleave)="entryIsHovered.set(false)"
+        (click)="focusEntry()"
       >
         @for (number of indentArray(); track $index) {
           <span class="leading-line"></span>
@@ -56,19 +64,19 @@ import { EntryInfoComponent } from "../entry-info/entry-info.component";
               (checkedToggle)="onCheckboxToggled($event)"
             />
 
-            <app-duration-estimate
+            <app-duration-vs-estimate
               class="duration-component"
-              [startTime]="entry().startTimestamp"
-              [endTime]="entry().endTimestamp"
+              [duration]="duration()"
               [estimate]="entry().estimatedDuration"
             />
           }
           <div
+            [id]="entry().id"
             class="text"
             [contentEditable]="true"
             [(ngModel)]="textModel"
             [ngStyle]="{ 'text-decoration': entry().isDone ? 'line-through' : '' }"
-            (focusout)="onFocusOut($event)"
+            (focusout)="onFocusOut()"
             contenteditableModel
           ></div>
         </div>
@@ -138,12 +146,24 @@ import { EntryInfoComponent } from "../entry-info/entry-info.component";
   `,
 })
 export class OutlinerEntryComponent {
+  entryService = inject(EntryService);
+
   entry = input.required<Entry>();
   textModel = model<string>('Basic text');
 
   hasChildren = input.required<boolean>();
   entryIsHovered = signal(false);
   isMultiLine = signal(false);
+
+  duration: Signal<number> = computed(() => {
+    let startTime = this.entry().startTimestamp;
+    let endTime = this.entry().endTimestamp;
+
+    if (endTime !== undefined && startTime !== undefined) {
+      return Math.floor((endTime.getTime() - startTime.getTime()) / 60000);
+    }
+    return 0;
+  })
 
   displayLineUnderBullet: Signal<boolean> = computed(() => {
     return this.hasChildren() || this.isMultiLine()
@@ -177,15 +197,38 @@ export class OutlinerEntryComponent {
     this.textModel.set(div.textContent || '');
   }
 
-  onFocusOut(event: FocusEvent) {
+  onFocusOut() {
     if (this.textModel() != this.entry().text) {
-      console.log(`id: ${this.entry().id} changed txt to: ${this.textModel()}`);
+      const newEntry: Entry = {
+        id: this.entry().id,
+        parent: this.entry().parent,
+        path: this.entry().path,
+        nesting: this.entry().nesting,
+        startTimestamp: this.entry().startTimestamp,
+        endTimestamp: this.entry().endTimestamp,
+        text: this.textModel(),
+        showTodo: this.entry().showTodo,
+        isDone: this.entry().isDone,
+        estimatedDuration: this.entry().estimatedDuration,
+        tags: [],
+      }
+      if (newEntry.id === 0) {
+        this.entryService.add$.next(newEntry);
+      } else {
+        this.entryService.edit$.next(newEntry);
+      }
     }
   }
 
   onCheckboxToggled(value: boolean) {
     console.log(`Toggle checkbox for entry ${this.entry().id} to ${value}`);
   }
+
+  focusEntry() {
+    const textBox = document.getElementById(this.entry().id.toString());
+    textBox?.focus();
+  }
+
 
   // calculateIsMultiLine() {
   //   const textBox = document.getElementById(this.entry().id.toString());

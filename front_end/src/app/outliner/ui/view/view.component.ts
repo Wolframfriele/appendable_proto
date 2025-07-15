@@ -1,19 +1,22 @@
 import { Component, computed, input } from '@angular/core';
 import { OutlinerEntryComponent } from '../outliner-entry/outliner-entry.component';
 import { DisplayDatePipe } from '../../../pipes/display-date.pipe';
-import { DisplayDurationPipe } from '../../../pipes/display-duration.pipe';
 import { Entry } from '../../../model/entry.model';
+import { DurationVsEstimateComponent } from '../../../shared/ui/duration-vs-estimate/duration-vs-estimate.component';
 
 @Component({
   selector: 'app-view',
   standalone: true,
-  imports: [OutlinerEntryComponent, DisplayDatePipe, DisplayDurationPipe],
+  imports: [OutlinerEntryComponent, DisplayDatePipe, DurationVsEstimateComponent],
   template: `
     <div class="view">
       <div class="group-titel">
         <h1 class="titel">{{ date() | displayDate }}</h1>
 
-        <span class="total-duration">{{ sumDuration() | displayDuration }}</span>
+        <app-duration-vs-estimate
+          [duration]="sumDuration()"
+          [estimate]="0"
+        ></app-duration-vs-estimate>
       </div>
       <ul>
         @for (entry of viewEntries(); track $index; let idx = $index) {

@@ -75,7 +75,7 @@ UPDATE entries SET
     path=?3, 
     nesting=?4, 
     start_timestamp=DATETIME(?5), 
-    end_timestamp=?6, 
+    end_timestamp=DATETIME(?6), 
     text=?7, 
     show_todo=?8, 
     is_done=?9, 
@@ -98,8 +98,8 @@ FROM entries WHERE entry_id = ?1;
     )
     .bind(new_entry_id.entry_id)
     .bind(entry.parent)
-    .bind(format!("{}{}/", parent_entry.0, new_entry_id.entry_id))
-    .bind(parent_entry.1 + 1)
+    .bind(update_path(&parent_entry.0, parent_entry.1))
+    .bind(parent_entry.1)
     .bind(entry.start_timestamp)
     .bind(entry.end_timestamp)
     .bind(entry.text)
@@ -175,8 +175,8 @@ UPDATE entries SET
     parent=?2, 
     path=?3, 
     nesting=?4, 
-    start_timestamp=?5, 
-    end_timestamp=?6, 
+    start_timestamp=DATETIME(?5), 
+    end_timestamp=DATETIME(?6), 
     text=?7, 
     show_todo=?8, 
     is_done=?9, 
@@ -225,4 +225,11 @@ DELETE FROM entries WHERE entry_id = ?1;
         .await
         .is_ok()
     }
+}
+
+fn update_path(parent_path: &str, parent_id: i64) -> String {
+    if parent_id == 0 {
+        return String::from("/");
+    }
+    format!("{}/{}/", parent_path, parent_id)
 }

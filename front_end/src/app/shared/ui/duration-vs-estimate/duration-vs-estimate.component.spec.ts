@@ -10,7 +10,7 @@ describe('DurationEstimateComponent', () => {
     await TestBed.configureTestingModule({
       imports: [DurationEstimateComponent]
     })
-    .compileComponents();
+      .compileComponents();
 
     fixture = TestBed.createComponent(DurationEstimateComponent);
     component = fixture.componentInstance;
