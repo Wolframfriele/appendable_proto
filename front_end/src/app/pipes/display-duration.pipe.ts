@@ -6,19 +6,21 @@ import { Pipe, PipeTransform } from '@angular/core';
 export class DisplayDurationPipe implements PipeTransform {
 
   /**
-   * Convert a duration in minutes to a string of the format 2d 5h 42m.
+   * Convert a duration in seconds to a string of the format 2d 5h 42m.
    * If a unit is zero it is ignored
-   * @param minutes The duration in minutes
+   * @param seconds The duration in seconds
    * @returns a string representing the duration
    */
-  transform(minutes: number | undefined): string {
-    if (minutes === undefined) {
-      return '0';
+  transform(seconds: number | undefined): string {
+    if (seconds === undefined) {
+      return '';
     }
 
-    const days = Math.floor(minutes / 3600);
-    const hours = Math.floor(minutes / 60);
-    const minutesRemainder = minutes % 60;
+    const days = Math.floor(seconds / 86400);
+    const days_remainder = seconds % 86400
+    const hours = Math.floor(days_remainder / 3600);
+    const hours_remainder = days_remainder % 3600
+    const minutes = Math.floor(hours_remainder / 60);
 
     var result = '';
     if (days > 0) {
@@ -28,11 +30,12 @@ export class DisplayDurationPipe implements PipeTransform {
       result = result + `${hours}h `;
     }
     if (minutes > 0) {
-      result = result + `${minutesRemainder}m `;
+      result = result + `${minutes}m `;
     }
     if (result === '') {
       return '0m';
     }
+
     return result.trim();
   }
 }

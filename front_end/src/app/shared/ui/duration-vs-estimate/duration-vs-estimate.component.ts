@@ -19,8 +19,8 @@ import { DisplayDurationPipe } from '../../../pipes/display-duration.pipe';
 })
 export class DurationVsEstimateComponent {
 
-  duration = input<number>();
-  estimate = input<number>();
+  duration = input<number | undefined>();
+  estimate = input<number | undefined>();
 
   formatDuration: Signal<string> = computed(() => {
     const pipe = new DisplayDurationPipe();

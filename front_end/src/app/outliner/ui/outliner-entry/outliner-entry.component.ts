@@ -41,8 +41,6 @@ import { EntryService } from "../../data/entry.service";
 
       <div
         class="text-elements-container"
-        (mouseover)="entryIsHovered.set(true)"
-        (mouseleave)="entryIsHovered.set(false)"
         (click)="focusEntry()"
       >
         @for (number of indentArray(); track $index) {
@@ -54,7 +52,26 @@ import { EntryService } from "../../data/entry.service";
           [ngStyle]="{ opacity: displayLineUnderBullet() ? '100' : '0' }"
         ></span>
 
-        <span class="dot"></span>
+        <div>
+        <span
+          class="dot"
+          (mouseover)="isDotHovered.set(true)"
+          (mouseleave)="isDotHovered.set(false)"
+        ></span>
+
+        @if (isMenuOpen()) {
+          <div
+            class="menu"
+            (mouseover)="isMenuHovered.set(true)"
+            (mouseleave)="isMenuHovered.set(false)"
+          >
+            <ul class="menu-items">
+              <li>Make todo</li>
+              <li>Delete entry</li>
+            </ul>
+          </div>
+        }
+        </div>
 
         <div class="text-container" [ngStyle]="{ 'max-width': textWidth() }">
           @if (entry().showTodo) {
@@ -108,6 +125,32 @@ import { EntryService } from "../../data/entry.service";
         float: left;
       }
 
+      .dot:hover  {
+        background-color: white;
+      }
+
+      .menu {
+        background-color: var(--lighter-black);
+        position: absolute;
+        z-index: 1;
+        transform: translate(-0.3rem, 0.9rem);
+        border-radius: 5px;
+        box-shadow: 0px 5px 8px 0px rgba(0,0,0,0.05);
+        font-size: 0.9rem;
+        ul {
+          padding: 0;
+          list-style-type: none;
+          li {
+            border-radius: 5px;
+            padding: 0.5rem 1rem;
+          }
+          li:hover {
+            background-color: var(--active-color);
+            color: var(--hover-text);
+          }
+        }
+      }
+
       .leading-line {
         border-left: 1px solid var(--secondary-text);
         margin-left: 1rem;
@@ -155,12 +198,16 @@ export class OutlinerEntryComponent {
   entryIsHovered = signal(false);
   isMultiLine = signal(false);
 
+  isDotHovered = signal(false);
+  isMenuHovered = signal(false);
+  isMenuOpen = computed(() => this.isDotHovered() || this.isMenuHovered());
+
   duration: Signal<number> = computed(() => {
     let startTime = this.entry().startTimestamp;
     let endTime = this.entry().endTimestamp;
 
     if (endTime !== undefined && startTime !== undefined) {
-      return Math.floor((endTime.getTime() - startTime.getTime()) / 60000);
+      return Math.floor((endTime.getTime() - startTime.getTime()) / 1000);
     }
     return 0;
   })
@@ -169,12 +216,6 @@ export class OutlinerEntryComponent {
     return this.hasChildren() || this.isMultiLine()
   })
 
-  displayTime: Signal<boolean> = computed(() => {
-    if (this.entry().nesting === 0 || this.entryIsHovered()) {
-      return true;
-    }
-    return false;
-  });
 
   indentArray: Signal<number[]> = computed(() => {
     return Array(this.entry().nesting)
@@ -192,9 +233,9 @@ export class OutlinerEntryComponent {
     effect(() => this.textModel.set(this.entry().text));
   }
 
-  onContentChange(event: Event) {
-    const div = event.target as HTMLElement;
-    this.textModel.set(div.textContent || '');
+  focusEntry() {
+    const textBox = document.getElementById(this.entry().id.toString());
+    textBox?.focus();
   }
 
   onFocusOut() {
@@ -222,11 +263,6 @@ export class OutlinerEntryComponent {
 
   onCheckboxToggled(value: boolean) {
     console.log(`Toggle checkbox for entry ${this.entry().id} to ${value}`);
-  }
-
-  focusEntry() {
-    const textBox = document.getElementById(this.entry().id.toString());
-    textBox?.focus();
   }
 
 

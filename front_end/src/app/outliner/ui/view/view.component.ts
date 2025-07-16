@@ -94,13 +94,14 @@ export class ViewComponent {
 
   sumDuration() {
     if (this.viewEntries().length > 0) {
-      return Math.floor(this.viewEntries().map(entry => {
-        if (entry.endTimestamp) {
+      const summed = this.viewEntries().map(entry => {
+        if (entry.nesting === 0 && entry.endTimestamp) {
           return entry.endTimestamp.getTime() - entry.startTimestamp.getTime();
         } else {
           return 0;
         }
-      }).reduce((sum, p) => sum + p) / 1000000);
+      }).reduce((sum, p) => sum + p);
+      return Math.floor(summed / 1000);
     }
     return 0;
   }

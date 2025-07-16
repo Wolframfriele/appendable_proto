@@ -9,14 +9,14 @@ use axum::{
 use anyhow::Error;
 use chrono::{Local, NaiveDateTime, NaiveTime};
 use serde::Deserialize;
-use std::{str::FromStr, sync::Arc};
+use std::sync::Arc;
 
 use track_proto::{
     database::select_entries,
     models::{Entry, EntryAndTags},
 };
 
-use track_proto::database::{delete_entry, insert_entry, select_entry, update_entry, Database};
+use track_proto::database::{delete_entry, insert_new_entry, select_entry, update_entry, Database};
 
 #[tokio::main]
 async fn main() {
@@ -76,7 +76,7 @@ async fn post_entry(
     db: State<Arc<Database>>,
     axum::extract::Json(payload): axum::extract::Json<Entry>,
 ) -> Result<Json<Entry>, NotFountError> {
-    Ok(Json(insert_entry(&db, payload).await?))
+    Ok(Json(insert_new_entry(&db, payload).await?))
 }
 
 async fn put_entry(
@@ -89,7 +89,7 @@ async fn put_entry(
         println!("{error}");
         return (StatusCode::BAD_REQUEST, error);
     }
-    update_entry(&db, payload).await;
+    update_entry(&db, payload).await.unwrap();
     (StatusCode::ACCEPTED, "Entry updated")
 }
 
