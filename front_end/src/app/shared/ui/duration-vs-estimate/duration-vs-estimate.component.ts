@@ -27,7 +27,10 @@ export class DurationVsEstimateComponent {
     const estimate = this.estimate();
 
     let result = pipe.transform(this.duration());
-    result = result + ` / ~${pipe.transform(estimate)}`
+
+    if (this.estimate() !== undefined && this.estimate() !== 0) {
+      result = result + ` / ~${pipe.transform(estimate)}`
+    }
     return result;
   })
 }

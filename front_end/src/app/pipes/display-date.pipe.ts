@@ -8,5 +8,4 @@ export class DisplayDatePipe implements PipeTransform {
   transform(date: Date): string {
     return date.toDateString();
   }
-
 }

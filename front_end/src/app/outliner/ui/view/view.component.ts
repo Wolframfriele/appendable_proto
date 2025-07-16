@@ -1,17 +1,16 @@
-import { Component, computed, input } from '@angular/core';
+import { Component, input } from '@angular/core';
 import { OutlinerEntryComponent } from '../outliner-entry/outliner-entry.component';
-import { DisplayDatePipe } from '../../../pipes/display-date.pipe';
 import { Entry } from '../../../model/entry.model';
 import { DurationVsEstimateComponent } from '../../../shared/ui/duration-vs-estimate/duration-vs-estimate.component';
 
 @Component({
   selector: 'app-view',
   standalone: true,
-  imports: [OutlinerEntryComponent, DisplayDatePipe, DurationVsEstimateComponent],
+  imports: [OutlinerEntryComponent, DurationVsEstimateComponent],
   template: `
     <div class="view">
       <div class="group-titel">
-        <h1 class="titel">{{ date() | displayDate }}</h1>
+        <h1 class="titel">{{ titel() }}</h1>
 
         <app-duration-vs-estimate
           [duration]="sumDuration()"
@@ -67,9 +66,8 @@ import { DurationVsEstimateComponent } from '../../../shared/ui/duration-vs-esti
 })
 export class ViewComponent {
 
-  dateString = input.required<string>();
+  titel = input.required<string>();
   viewEntries = input.required<Entry[]>();
-  date = computed(() => new Date(this.dateString()));
 
   emptyEntry: Entry = {
     id: 0,

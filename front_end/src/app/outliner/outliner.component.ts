@@ -3,17 +3,18 @@ import { DateRangeService } from './data/date-range.service';
 import { EntryService } from './data/entry.service';
 import { ViewComponent } from './ui/view/view.component';
 import { HeaderComponent } from '../shared/ui/header/header.component';
+import { DisplayDatePipe } from '../pipes/display-date.pipe';
 
 @Component({
   selector: 'app-outliner',
   standalone: true,
-  imports: [HeaderComponent, ViewComponent],
+  imports: [HeaderComponent, ViewComponent, DisplayDatePipe],
   template: `
     <app-header></app-header>
 
     <div class="view-container">
       @for (day of getDays ; track $index) {
-        <app-view [dateString]="day" [viewEntries]="getEntries(day)"></app-view>
+        <app-view [titel]="convertToDate(day) | displayDate" [viewEntries]="getEntries(day)"></app-view>
       }
 
       @if (!entryService.loaded()) {
@@ -45,10 +46,14 @@ export default class OutlinerComponent {
     return Array.from(this.entryService.entries().keys()).reverse();
   }
 
-  public getEntries(day: string) {
+  getEntries(day: string) {
     if (this.entryService.entries().has(day)) {
       return this.entryService.entries().get(day)!;
     }
     return [];
+  }
+
+  convertToDate(dateStr: string): Date {
+    return new Date(dateStr);
   }
 }
