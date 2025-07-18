@@ -6,7 +6,7 @@ use axum::{
     Json, Router,
 };
 
-use anyhow::Error;
+use anyhow::{anyhow, Error};
 use chrono::{Local, NaiveDateTime, NaiveTime};
 use serde::Deserialize;
 use std::sync::Arc;
@@ -40,7 +40,7 @@ async fn main() {
 async fn get_entry(
     Path(entry_id): Path<i64>,
     db: State<Arc<Database>>,
-) -> Result<Json<Entry>, NotFountError> {
+) -> Result<Json<Entry>, NotFoundError> {
     Ok(Json(select_entry(&db, entry_id).await?))
 }
 
@@ -53,7 +53,7 @@ struct GetEntriesParams {
 async fn get_entries(
     params: Query<GetEntriesParams>,
     db: State<Arc<Database>>,
-) -> Result<Json<Vec<EntryAndTags>>, NotFountError> {
+) -> Result<Json<Vec<EntryAndTags>>, NotFoundError> {
     Ok(Json(
         select_entries(
             &db,
@@ -75,7 +75,7 @@ async fn get_entries(
 async fn post_entry(
     db: State<Arc<Database>>,
     axum::extract::Json(payload): axum::extract::Json<Entry>,
-) -> Result<Json<Entry>, NotFountError> {
+) -> Result<Json<Entry>, BadRequestError> {
     Ok(Json(insert_new_entry(&db, payload).await?))
 }
 
@@ -83,14 +83,13 @@ async fn put_entry(
     Path(entry_id): Path<i64>,
     db: State<Arc<Database>>,
     axum::extract::Json(payload): axum::extract::Json<Entry>,
-) -> impl IntoResponse {
+) -> Result<Json<Entry>, BadRequestError> {
     if entry_id != payload.entry_id {
-        let error = "The entry_id in the URL does not match the entry_id in the request body";
-        println!("{error}");
-        return (StatusCode::BAD_REQUEST, error);
+        BadRequestError(anyhow!(
+            "The entry_id in the URL does not match the entry_id in the request body"
+        ));
     }
-    update_entry(&db, payload).await.unwrap();
-    (StatusCode::ACCEPTED, "Entry updated")
+    Ok(Json(update_entry(&db, payload).await?))
 }
 
 #[derive(Deserialize)]
@@ -111,16 +110,34 @@ async fn delete_entry_api(
 }
 
 // Error handling
-struct NotFountError(Error);
+struct NotFoundError(Error);
 
-impl IntoResponse for NotFountError {
+impl IntoResponse for NotFoundError {
     fn into_response(self) -> Response {
         (StatusCode::NOT_FOUND, format!("Not found: {}", self.0)).into_response()
     }
 }
 
 // convert anyhow error into NotFoundError for fucntions that return `Result<_, Error>`
-impl<E> From<E> for NotFountError
+impl<E> From<E> for NotFoundError
+where
+    E: Into<Error>,
+{
+    fn from(err: E) -> Self {
+        Self(err.into())
+    }
+}
+
+struct BadRequestError(Error);
+
+impl IntoResponse for BadRequestError {
+    fn into_response(self) -> Response {
+        (StatusCode::BAD_REQUEST, format!("Bad request: {}", self.0)).into_response()
+    }
+}
+
+// convert anyhow error into NotFoundError for fucntions that return `Result<_, Error>`
+impl<E> From<E> for BadRequestError
 where
     E: Into<Error>,
 {

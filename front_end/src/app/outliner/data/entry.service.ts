@@ -1,7 +1,7 @@
 import { computed, inject, Injectable, signal } from '@angular/core';
 import { DateRangeService } from './date-range.service';
 import { catchError, concatMap, EMPTY, map, merge, startWith, Subject, switchMap } from 'rxjs';
-import { HttpClient, HttpHeaders } from '@angular/common/http';
+import { HttpClient, HttpHeaders, httpResource } from '@angular/common/http';
 import { formatDate } from '@angular/common';
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { Entry } from '../../model/entry.model';
@@ -53,13 +53,10 @@ export class EntryService {
 
   entryEdited$ = this.edit$.pipe(
     concatMap((editEntry) => {
-      const headers = new HttpHeaders({ 'Content-Type': 'application/json' });
-      const body = mapToJsonEntry(editEntry);
-
-      console.log(`Edit entry: id: ${editEntry.id} changed txt to: ${editEntry.text}`);
+      console.log(`Edit entry: ${editEntry.id}`);
       return this.http
-        .put(`/api/entries/${editEntry.id}`, body, { headers })
-        .pipe(catchError((err) => this.handleError(err)));
+        .put(`/api/entries/${editEntry.id}`, mapToJsonEntry(editEntry), { headers: new HttpHeaders({ 'Content-Type': 'application/json' }) })
+        .pipe(catchError((err) => this.handleError(err)))
     })
   );
 
@@ -77,13 +74,14 @@ export class EntryService {
         map((entries: Entry[]) => this.groupEntriesByDay(entries)),
         takeUntilDestroyed(),
       )
-      .subscribe((entries) =>
+      .subscribe((entries) => {
+        console.log(`updatin entries`);
         this.state.update((state) => ({
           ...state,
           entries,
           loaded: true,
-        })),
-      );
+        }))
+      });
   }
 
   private handleError(err: any) {
@@ -117,5 +115,4 @@ export class EntryService {
   private toDateStr(input: Date): string {
     return input.toISOString().split("T")[0];
   }
-
 }

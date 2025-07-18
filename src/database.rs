@@ -85,7 +85,7 @@ pub async fn select_entries(
     .unwrap()
 }
 
-pub async fn update_entry(db: &Database, entry: Entry) -> Result<()> {
+pub async fn update_entry(db: &Database, entry: Entry) -> Result<Entry> {
     println!("Update entry: {:?}", entry);
     sqlx::query(
         "
@@ -115,7 +115,7 @@ pub async fn update_entry(db: &Database, entry: Entry) -> Result<()> {
     .execute(&db.pool)
     .await?;
 
-    Ok(())
+    select_entry(db, entry.entry_id).await
 }
 
 pub async fn delete_entry(db: &Database, entry_id: i64, with_children: bool) -> bool {
