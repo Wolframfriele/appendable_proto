@@ -32,9 +32,9 @@ import { EntryService } from "../../data/entry.service";
     <li>
       @if (entry().parent === null) {
         <app-entry-info
-          [startTime]="entry().startTimestamp"
+          [startTime]="updatedEntry().startTimestamp"
           [duration]="duration()"
-          [estimate]="entry().estimatedDuration"
+          [estimate]="updatedEntry().estimatedDuration"
           [tags]="entry().tags"
         ></app-entry-info>
       }
@@ -66,8 +66,16 @@ import { EntryService } from "../../data/entry.service";
             (mouseleave)="isMenuHovered.set(false)"
           >
             <ul class="menu-items">
-              <li>Make todo</li>
-              <li>Delete entry</li>
+              <li
+                (click)="onTodoToggled()"
+              >
+                @if(updatedEntry().showTodo) {
+                  Hide todo
+                } @else {
+                  Make todo
+                }
+              </li>
+              <li (click)="onDeleteEntry()">Delete entry</li>
             </ul>
           </div>
         }
@@ -77,21 +85,21 @@ import { EntryService } from "../../data/entry.service";
           @if (entry().showTodo) {
             <app-checkbox
               class="checkbox"
-              [checked]="entry().isDone"
+              [checked]="updatedEntry().isDone"
               (checkedToggle)="onCheckboxToggled($event)"
             />
 
             <app-duration-vs-estimate
               class="duration-component"
               [duration]="duration()"
-              [estimate]="entry().estimatedDuration"
+              [estimate]="updatedEntry().estimatedDuration"
             />
           }
           <div
             [id]="entry().id"
             class="text"
             [contentEditable]="true"
-            [(ngModel)]="textModel"
+            [(ngModel)]="updatedEntry().text"
             [ngStyle]="{ 'text-decoration': entry().isDone ? 'line-through' : '' }"
             (focusout)="onFocusOut()"
             contenteditableModel
@@ -192,7 +200,19 @@ export class OutlinerEntryComponent {
   entryService = inject(EntryService);
 
   entry = input.required<Entry>();
-  textModel = model<string>('Basic text');
+  updatedEntry = model<Entry>({
+    id: 0,
+    parent: undefined,
+    path: '',
+    nesting: 0,
+    startTimestamp: new Date(),
+    endTimestamp: undefined,
+    text: '',
+    showTodo: false,
+    isDone: false,
+    estimatedDuration: 0,
+    tags: [],
+  });
 
   hasChildren = input.required<boolean>();
   entryIsHovered = signal(false);
@@ -220,7 +240,7 @@ export class OutlinerEntryComponent {
   indentArray: Signal<number[]> = computed(() => {
     return Array(this.entry().nesting)
       .fill(0)
-      .map((x, i) => i);
+      .map((_, i) => i);
   });
 
   textWidth: Signal<string> = computed(() => {
@@ -230,7 +250,19 @@ export class OutlinerEntryComponent {
   });
 
   constructor() {
-    effect(() => this.textModel.set(this.entry().text));
+    effect(() => this.updatedEntry.set({
+      id: this.entry().id,
+      parent: this.entry().parent,
+      path: this.entry().path,
+      nesting: this.entry().nesting,
+      startTimestamp: this.entry().startTimestamp,
+      endTimestamp: this.entry().endTimestamp,
+      text: this.entry().text,
+      showTodo: this.entry().showTodo,
+      isDone: this.entry().isDone,
+      estimatedDuration: this.entry().estimatedDuration,
+      tags: this.entry().tags,
+    }))
   }
 
   focusEntry() {
@@ -239,30 +271,30 @@ export class OutlinerEntryComponent {
   }
 
   onFocusOut() {
-    if (this.textModel() != this.entry().text) {
-      const newEntry: Entry = {
-        id: this.entry().id,
-        parent: this.entry().parent,
-        path: this.entry().path,
-        nesting: this.entry().nesting,
-        startTimestamp: this.entry().startTimestamp,
-        endTimestamp: this.entry().endTimestamp,
-        text: this.textModel(),
-        showTodo: this.entry().showTodo,
-        isDone: this.entry().isDone,
-        estimatedDuration: this.entry().estimatedDuration,
-        tags: [],
-      }
-      if (newEntry.id === 0) {
-        this.entryService.add$.next(newEntry);
+    if (this.entry() !== this.updatedEntry()) {
+      if (this.updatedEntry().id === 0) {
+        this.entryService.add$.next(this.updatedEntry());
       } else {
-        this.entryService.edit$.next(newEntry);
+        this.entryService.edit$.next(this.updatedEntry());
       }
     }
   }
 
-  onCheckboxToggled(value: boolean) {
-    console.log(`Toggle checkbox for entry ${this.entry().id} to ${value}`);
+  onCheckboxToggled(newValue: boolean) {
+    console.log(`Toggle checkbox for entry ${this.entry().id} to ${newValue}`);
+    this.updatedEntry.update((entry) => ({ ...entry, isDone: newValue }));
+    this.entryService.edit$.next(this.updatedEntry());
+  }
+
+  onTodoToggled() {
+    console.log(`Toggle todo for entry: ${this.entry().id}`);
+    this.updatedEntry.update((entry) => ({ ...entry, showTodo: !entry.showTodo }));
+    this.entryService.edit$.next(this.updatedEntry());
+  }
+
+  onDeleteEntry() {
+    console.log(`Deleting entry: ${this.entry().id}`);
+    this.entryService.remove$.next({ id: this.entry().id, withChildren: true });
   }
 
 

@@ -121,29 +121,28 @@ pub async fn update_entry(db: &Database, entry: Entry) -> Result<Entry> {
 pub async fn delete_entry(db: &Database, entry_id: i64, with_children: bool) -> bool {
     if with_children {
         println!("Deleting with children for entry: {entry_id}");
-        sqlx::query(
+        let _ = sqlx::query(
             "
     DELETE FROM entries WHERE path LIKE (
-        SELECT CONCAT(path, '%') FROM entries WHERE entry_id = ?1
+        SELECT CONCAT(path, ?1, '/', '%') FROM entries WHERE entry_id = ?1
     );
             ",
         )
         .bind(entry_id)
         .execute(&db.pool)
-        .await
-        .is_ok()
-    } else {
-        println!("Safe deleting entry: {entry_id}");
-        sqlx::query(
-            "
-    DELETE FROM entries WHERE entry_id = ?1;
-            ",
-        )
-        .bind(entry_id)
-        .execute(&db.pool)
-        .await
-        .is_ok()
+        .await;
     }
+
+    println!("Safe deleting entry: {entry_id}");
+    sqlx::query(
+        "
+    DELETE FROM entries WHERE entry_id = ?1;
+        ",
+    )
+    .bind(entry_id)
+    .execute(&db.pool)
+    .await
+    .is_ok()
 }
 
 // Should probably add a maximum amount of time between the start and end timestamp?

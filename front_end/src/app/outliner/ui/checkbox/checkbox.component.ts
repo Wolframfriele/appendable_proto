@@ -44,6 +44,6 @@ export class CheckboxComponent {
   checkedToggle = output<boolean>();
 
   onClick() {
-    this.checkedToggle.emit(!this.checked)
+    this.checkedToggle.emit(!this.checked());
   }
 }

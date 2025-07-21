@@ -1,10 +1,10 @@
 import { computed, inject, Injectable, signal } from '@angular/core';
 import { DateRangeService } from './date-range.service';
 import { catchError, concatMap, EMPTY, map, merge, startWith, Subject, switchMap } from 'rxjs';
-import { HttpClient, HttpHeaders, httpResource } from '@angular/common/http';
+import { HttpClient, HttpHeaders } from '@angular/common/http';
 import { formatDate } from '@angular/common';
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
-import { Entry } from '../../model/entry.model';
+import { Entry, RemoveEntry } from '../../model/entry.model';
 import { mapToEntries, mapToJsonEntry } from '../../model/entry.mapper';
 import { EntryWithTagJson } from '../../model/entry.interface';
 
@@ -18,6 +18,8 @@ export interface EntryState {
   providedIn: 'root'
 })
 export class EntryService {
+  private AS_JSON_HEADERS = { headers: new HttpHeaders({ 'Content-Type': 'application/json' }) };
+
   private dateRangeService = inject(DateRangeService);
   http = inject(HttpClient);
 
@@ -36,33 +38,40 @@ export class EntryService {
   // sources
   add$ = new Subject<Entry>();
   edit$ = new Subject<Entry>();
-  remove$ = new Subject<Entry>();
+  remove$ = new Subject<RemoveEntry>();
 
-  entryAdded$ = this.add$.pipe(
+  private entryAdded$ = this.add$.pipe(
     concatMap((addEntry) => {
       addEntry.startTimestamp = new Date();
-      const headers = new HttpHeaders({ 'Content-Type': 'application/json' });
-      const body = mapToJsonEntry(addEntry);
 
       console.log(`New entry: with text: ${addEntry.text}`);
       return this.http
-        .post(`/api/entries`, body, { headers })
+        .post(`/api/entries`, mapToJsonEntry(addEntry), this.AS_JSON_HEADERS)
         .pipe(catchError((err) => this.handleError(err)));
     })
   );
 
-  entryEdited$ = this.edit$.pipe(
+  private entryEdited$ = this.edit$.pipe(
     concatMap((editEntry) => {
       console.log(`Edit entry: ${editEntry.id}`);
       return this.http
-        .put(`/api/entries/${editEntry.id}`, mapToJsonEntry(editEntry), { headers: new HttpHeaders({ 'Content-Type': 'application/json' }) })
+        .put(`/api/entries/${editEntry.id}`, mapToJsonEntry(editEntry), this.AS_JSON_HEADERS)
+        .pipe(catchError((err) => this.handleError(err)))
+    })
+  );
+
+  private entryRemoved$ = this.remove$.pipe(
+    concatMap((removeEntry) => {
+      console.log(`Removing entry: ${removeEntry.id}, with children: ${removeEntry.withChildren}`);
+      return this.http
+        .delete(`/api/entries/${removeEntry.id}?with_children=${removeEntry.withChildren}`)
         .pipe(catchError((err) => this.handleError(err)))
     })
   );
 
   constructor() {
     // reducers
-    merge(this.entryAdded$, this.entryEdited$, this.dateRangeService.dateRangeExpanded$)
+    merge(this.entryAdded$, this.entryEdited$, this.entryRemoved$, this.dateRangeService.dateRangeExpanded$)
       .pipe(
         startWith(null),
         switchMap(() =>

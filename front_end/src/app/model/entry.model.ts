@@ -11,3 +11,5 @@ export type Entry = {
   estimatedDuration: number | undefined;
   tags: string[];
 }
+
+export type RemoveEntry = { id: Entry['id'], withChildren: boolean };
