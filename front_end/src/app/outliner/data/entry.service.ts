@@ -7,6 +7,7 @@ import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { Entry, RemoveEntry } from '../../model/entry.model';
 import { mapToEntries, mapToJsonEntry } from '../../model/entry.mapper';
 import { EntryWithTagJson } from '../../model/entry.interface';
+import { UrlDatetimePipe } from '../../pipes/url-datetime.pipe';
 
 export interface EntryState {
   entries: Map<string, Entry[]>,
@@ -19,6 +20,8 @@ export interface EntryState {
 })
 export class EntryService {
   private AS_JSON_HEADERS = { headers: new HttpHeaders({ 'Content-Type': 'application/json' }) };
+
+  toUrlDateTime = new UrlDatetimePipe();
 
   private dateRangeService = inject(DateRangeService);
   http = inject(HttpClient);
@@ -76,7 +79,7 @@ export class EntryService {
         startWith(null),
         switchMap(() =>
           this.http
-            .get<EntryWithTagJson[]>(`/api/entries?start=${this.toDateTimeStr(this.dateRangeService.start())}`)
+            .get<EntryWithTagJson[]>(`/api/entries?start=${this.toUrlDateTime.transform(this.dateRangeService.start())}`)
             .pipe(catchError((err) => this.handleError(err))),
         ),
         map((json: EntryWithTagJson[]) => mapToEntries(json)),
@@ -96,10 +99,6 @@ export class EntryService {
   private handleError(err: any) {
     this.state.update((state) => ({ ...state, error: err }));
     return EMPTY;
-  }
-
-  private toDateTimeStr(input: Date): string {
-    return formatDate(input, 'yyyy-MM-ddTHH:mm:ss', 'en-gb');
   }
 
   private groupEntriesByDay(entries: Entry[]): Map<string, Entry[]> {

@@ -13,10 +13,12 @@ use std::sync::Arc;
 
 use track_proto::{
     database::select_entries,
-    models::{Entry, EntryAndTags},
+    models::{Entry, EntryAndTags, NextDataResponse},
 };
 
-use track_proto::database::{delete_entry, insert_new_entry, select_entry, update_entry, Database};
+use track_proto::database::{
+    delete_entry, insert_new_entry, select_earlier_timestamp, select_entry, update_entry, Database,
+};
 
 #[tokio::main]
 async fn main() {
@@ -30,6 +32,10 @@ async fn main() {
             "/api/entries/{entry_id}",
             get(get_entry).put(put_entry).delete(delete_entry_api),
         )
+        .route(
+            "/api/earlier_entry/{last_data}",
+            get(get_first_entry_timestamp_before),
+        )
         .fallback(handler_404)
         .with_state(state);
 
@@ -41,6 +47,7 @@ async fn get_entry(
     Path(entry_id): Path<i64>,
     db: State<Arc<Database>>,
 ) -> Result<Json<Entry>, NotFoundError> {
+    print!("Getting entry: {entry_id}");
     Ok(Json(select_entry(&db, entry_id).await?))
 }
 
@@ -54,6 +61,10 @@ async fn get_entries(
     params: Query<GetEntriesParams>,
     db: State<Arc<Database>>,
 ) -> Result<Json<Vec<EntryAndTags>>, NotFoundError> {
+    println!(
+        "Getting entries between: {:?} and {:?}",
+        params.start, params.end
+    );
     Ok(Json(
         select_entries(
             &db,
@@ -89,6 +100,7 @@ async fn put_entry(
             "The entry_id in the URL does not match the entry_id in the request body"
         ));
     }
+    println!("Put entry: {:?}", entry_id);
     Ok(Json(update_entry(&db, payload).await?))
 }
 
@@ -102,6 +114,10 @@ async fn delete_entry_api(
     params: Query<DeleteEntrieParams>,
     db: State<Arc<Database>>,
 ) -> impl IntoResponse {
+    println!(
+        "Delete entry: {} with_children: {:?}",
+        entry_id, params.with_children
+    );
     if delete_entry(&db, entry_id, params.with_children.unwrap_or(false)).await {
         (StatusCode::NO_CONTENT, "Entry deleted")
     } else {
@@ -109,6 +125,13 @@ async fn delete_entry_api(
     }
 }
 
+async fn get_first_entry_timestamp_before(
+    Path(last_data): Path<NaiveDateTime>,
+    db: State<Arc<Database>>,
+) -> Result<Json<NextDataResponse>, BadRequestError> {
+    println!("Get next entry before: {last_data}");
+    Ok(Json(select_earlier_timestamp(&db, &last_data).await?))
+}
 // Error handling
 struct NotFoundError(Error);
 

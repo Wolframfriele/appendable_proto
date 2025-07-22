@@ -75,3 +75,8 @@ pub struct Tag {
 pub struct ResultEntry {
     pub entry_id: i64,
 }
+
+#[derive(FromRow, Serialize, Deserialize, Debug)]
+pub struct NextDataResponse {
+    pub entry_timestamp: DateTime<Utc>,
+}

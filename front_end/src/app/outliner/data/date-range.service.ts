@@ -1,21 +1,34 @@
-import { computed, Injectable, signal } from '@angular/core';
+import { HttpClient, HttpHeaders } from '@angular/common/http';
+import { computed, inject, Injectable, signal } from '@angular/core';
 import { takeUntilDestroyed, toObservable } from '@angular/core/rxjs-interop';
-import { Subject } from 'rxjs';
+import { catchError, concatMap, EMPTY, map, Observable, Subject } from 'rxjs';
+import { UrlDatetimePipe } from '../../pipes/url-datetime.pipe';
 
 interface DateRangeState {
   start: Date;
   end: Date;
+  error: String | null,
+}
+
+interface NextDataJson {
+  entry_timestamp: string,
 }
 
 @Injectable({
   providedIn: 'root'
 })
 export class DateRangeService {
+  private AS_JSON_HEADERS = { headers: new HttpHeaders({ 'Content-Type': 'application/json' }) };
+
+  toUrlDateTime = new UrlDatetimePipe();
+
+  http = inject(HttpClient);
 
   // state
   private state = signal<DateRangeState>({
     start: this.getTodayStart(),
     end: this.getTodayEnd(),
+    error: null,
   });
 
   // selectors
@@ -29,11 +42,21 @@ export class DateRangeService {
 
   constructor() {
     this.expand$
-      .pipe(takeUntilDestroyed())
-      .subscribe(() =>
+      .pipe(
+        concatMap(() => {
+          console.log(`Loading more entries`);
+          return this.http
+            .get<NextDataJson>(`/api/earlier_entry/${this.toUrlDateTime.transform(this.state().start)}`)
+            .pipe(catchError((err) => this.handleError(err)))
+        }),
+        map(response => this.mapToNextDate(response)),
+        takeUntilDestroyed(),
+      )
+      .subscribe((response) =>
         this.state.set({
-          start: this.subtractDay(this.state().start),
+          start: response,
           end: this.getTodayEnd(),
+          error: null,
         })
       );
   }
@@ -48,9 +71,21 @@ export class DateRangeService {
     return new Date(now.getFullYear(), now.getMonth(), now.getDate(), 23, 59, 59, 999);
   }
 
-  private subtractDay(date: Date): Date {
-    const result = new Date(date);
-    result.setDate(result.getDate() - 1);
-    return result;
+  private mapToNextDate(response: NextDataJson): Date {
+    let nextEntryDate = new Date(response.entry_timestamp);
+    nextEntryDate.setUTCHours(0, 0, 0, 0);
+    return nextEntryDate;
   }
+
+  private handleError(err: any) {
+    this.state.update((state) => ({ ...state, error: err }));
+    return EMPTY;
+  }
+
+
+  //private subtractDay(date: Date): Date {
+  //  const result = new Date(date);
+  //  result.setDate(result.getDate() - 1);
+  //  return result;
+  //}
 }

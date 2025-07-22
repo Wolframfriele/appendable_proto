@@ -1,4 +1,4 @@
-use crate::models::{Entry, EntryAndTags, ResultEntry};
+use crate::models::{Entry, EntryAndTags, NextDataResponse, ResultEntry};
 use anyhow::Result;
 use chrono::NaiveDateTime;
 use sqlx::sqlite::{SqlitePool, SqlitePoolOptions};
@@ -17,14 +17,8 @@ impl Database {
 }
 
 pub async fn insert_new_entry(db: &Database, entry: Entry) -> Result<Entry> {
-    println!("inserting new entry: {:?}", entry);
     update_end_timestamps_of_unclosed_entries(db, &entry).await?;
-    println!("updated previous unclosed timestampt");
     let new_entry_id = insert_entry(db, &entry).await?;
-    println!(
-        "Inserting new entry with ID: {:?} {:?}",
-        new_entry_id, entry
-    );
     Ok(select_entry(db, new_entry_id).await?)
 }
 
@@ -57,7 +51,6 @@ pub async fn select_entries(
     start: NaiveDateTime,
     end: NaiveDateTime,
 ) -> Vec<EntryAndTags> {
-    println!("Selecting between: {:?} and {:?}", start, end);
     sqlx::query_as::<_, EntryAndTags>(
         "
     SELECT 
@@ -86,7 +79,6 @@ pub async fn select_entries(
 }
 
 pub async fn update_entry(db: &Database, entry: Entry) -> Result<Entry> {
-    println!("Update entry: {:?}", entry);
     sqlx::query(
         "
     UPDATE entries SET 
@@ -120,7 +112,6 @@ pub async fn update_entry(db: &Database, entry: Entry) -> Result<Entry> {
 
 pub async fn delete_entry(db: &Database, entry_id: i64, with_children: bool) -> bool {
     if with_children {
-        println!("Deleting with children for entry: {entry_id}");
         let _ = sqlx::query(
             "
     DELETE FROM entries WHERE path LIKE (
@@ -133,7 +124,6 @@ pub async fn delete_entry(db: &Database, entry_id: i64, with_children: bool) -> 
         .await;
     }
 
-    println!("Safe deleting entry: {entry_id}");
     sqlx::query(
         "
     DELETE FROM entries WHERE entry_id = ?1;
@@ -198,6 +188,23 @@ async fn insert_entry(db: &Database, entry: &Entry) -> Result<i64> {
     .fetch_one(&db.pool)
     .await?;
     Ok(new_entry_id.entry_id)
+}
+
+pub async fn select_earlier_timestamp(
+    db: &Database,
+    timestamp: &NaiveDateTime,
+) -> Result<NextDataResponse> {
+    let next_data = sqlx::query_as::<_, NextDataResponse>(
+        "
+    SELECT start_timestamp AS entry_timestamp FROM entries 
+    WHERE start_timestamp < DATETIME(?1)
+    ORDER BY entry_timestamp DESC LIMIT 1;
+        ",
+    )
+    .bind(timestamp)
+    .fetch_one(&db.pool)
+    .await?;
+    Ok(next_data)
 }
 
 //async fn get_parent_path_and_nesting(db: &Database, entry: &Entry) -> Result<(String, i64)> {
