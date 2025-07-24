@@ -52,33 +52,33 @@ import { EntryService } from "../../data/entry.service";
           [ngStyle]="{ opacity: displayLineUnderBullet() ? '100' : '0' }"
         ></span>
 
-        <div>
-        <span
-          class="dot"
-          (mouseover)="isDotHovered.set(true)"
-          (mouseleave)="isDotHovered.set(false)"
-        ></span>
+        <div class="dot-container">
+          <span
+            class="dot"
+            (mouseover)="isDotHovered.set(true)"
+            (mouseleave)="isDotHovered.set(false)"
+          ></span>
 
-        @if (isMenuOpen()) {
-          <div
-            class="menu"
-            (mouseover)="isMenuHovered.set(true)"
-            (mouseleave)="isMenuHovered.set(false)"
-          >
-            <ul class="menu-items">
-              <li
-                (click)="onTodoToggled()"
-              >
-                @if(updatedEntry().showTodo) {
-                  Hide todo
-                } @else {
-                  Make todo
-                }
-              </li>
-              <li (click)="onDeleteEntry()">Delete entry</li>
-            </ul>
-          </div>
-        }
+          @if (isMenuOpen()) {
+            <div
+              class="menu"
+              (mouseover)="isMenuHovered.set(true)"
+              (mouseleave)="isMenuHovered.set(false)"
+            >
+              <ul class="menu-items">
+                <li
+                  (click)="onTodoToggled()"
+                >
+                  @if(updatedEntry().showTodo) {
+                    Hide todo
+                  } @else {
+                    Make todo
+                  }
+                </li>
+                <li (click)="onDeleteEntry()">Delete entry</li>
+              </ul>
+            </div>
+          }
         </div>
 
         <div class="text-container" [ngStyle]="{ 'max-width': textWidth() }">
@@ -122,6 +122,10 @@ import { EntryService } from "../../data/entry.service";
         margin-left: 1rem;
       }
 
+     .dot-container {
+        width: 1rem;
+     }
+
       .dot {
         height: 0.5rem;
         width: 0.5rem;
@@ -131,6 +135,16 @@ import { EntryService } from "../../data/entry.service";
         margin-top: 0.75rem;
         margin-right: 0.5rem;
         float: left;
+      }
+
+      .dot::before {
+        content: "";
+        position: relative;
+        inset-block: -0.5rem;
+        inset-inline: -0.3rem;
+        width: 1.2rem;
+        height: 1.2rem;
+        display: inline-block
       }
 
       .dot:hover  {

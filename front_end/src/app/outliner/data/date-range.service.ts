@@ -1,7 +1,7 @@
-import { HttpClient, HttpHeaders } from '@angular/common/http';
+import { HttpClient } from '@angular/common/http';
 import { computed, inject, Injectable, signal } from '@angular/core';
 import { takeUntilDestroyed, toObservable } from '@angular/core/rxjs-interop';
-import { catchError, concatMap, EMPTY, map, Observable, Subject } from 'rxjs';
+import { catchError, concatMap, EMPTY, map, Subject } from 'rxjs';
 import { UrlDatetimePipe } from '../../pipes/url-datetime.pipe';
 
 interface DateRangeState {
@@ -18,11 +18,9 @@ interface NextDataJson {
   providedIn: 'root'
 })
 export class DateRangeService {
-  private AS_JSON_HEADERS = { headers: new HttpHeaders({ 'Content-Type': 'application/json' }) };
+  http = inject(HttpClient);
 
   toUrlDateTime = new UrlDatetimePipe();
-
-  http = inject(HttpClient);
 
   // state
   private state = signal<DateRangeState>({
@@ -33,6 +31,7 @@ export class DateRangeService {
 
   // selectors
   start = computed(() => this.state().start);
+  end = computed(() => this.state().end);
 
   // sources
   expand$ = new Subject<undefined>();
@@ -81,11 +80,4 @@ export class DateRangeService {
     this.state.update((state) => ({ ...state, error: err }));
     return EMPTY;
   }
-
-
-  //private subtractDay(date: Date): Date {
-  //  const result = new Date(date);
-  //  result.setDate(result.getDate() - 1);
-  //  return result;
-  //}
 }

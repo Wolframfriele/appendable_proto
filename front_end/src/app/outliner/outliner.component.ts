@@ -4,13 +4,17 @@ import { EntryService } from './data/entry.service';
 import { ViewComponent } from './ui/view/view.component';
 import { HeaderComponent } from '../shared/ui/header/header.component';
 import { DisplayDatePipe } from '../pipes/display-date.pipe';
+import { StatusBarComponent } from './ui/status-bar/status-bar.component';
+import { CommandPalleteComponent } from "../shared/ui/command-pallete/command-pallete.component";
 
 @Component({
   selector: 'app-outliner',
   standalone: true,
-  imports: [HeaderComponent, ViewComponent, DisplayDatePipe],
+  imports: [HeaderComponent, ViewComponent, StatusBarComponent, DisplayDatePipe, CommandPalleteComponent],
   template: `
-    <app-header></app-header>
+    <app-header />
+
+    <app-command-pallete />
 
     <div class="view-container">
       @for (day of getDays ; track $index) {
@@ -28,6 +32,8 @@ import { DisplayDatePipe } from '../pipes/display-date.pipe';
           Load more entries
       </button>
     </div>
+
+    <app-status-bar />
   `,
   styles: `
     .view-container {
