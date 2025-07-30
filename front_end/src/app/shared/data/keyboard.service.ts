@@ -31,7 +31,6 @@ export class KeyboardService {
   activeControlMode = computed(() => this.state().activeControlMode);
 
   keyboard$ = fromEvent<KeyboardEvent>(document, 'keydown').pipe(
-    map((key) => key.key),
   )
 
   constructor() {
@@ -55,33 +54,37 @@ export class KeyboardService {
     )
 
     this.keyboard$.subscribe(
-      (key) => {
-        console.log(key);
+      (keyEvent) => {
+        console.log(keyEvent);
         switch (this.activeControlMode()) {
           case ControlMode.NORMAL_MODE:
-            const normalKeymapping = NormalModeMap.get(key);
+            const normalKeymapping = NormalModeMap.get(keyEvent.key);
             if (normalKeymapping) {
+              keyEvent.preventDefault();
               this.commandService.executeCommand$.next(normalKeymapping);
             }
             break;
 
           case ControlMode.INSERT_MODE:
-            const insertKeymapping = InsertModeMap.get(key);
+            const insertKeymapping = InsertModeMap.get(keyEvent.key);
             if (insertKeymapping) {
+              keyEvent.preventDefault();
               this.commandService.executeCommand$.next(insertKeymapping);
             }
             break;
 
           case ControlMode.VISUAL_MODE:
-            const visualKeymapping = VisualModeMap.get(key);
+            const visualKeymapping = VisualModeMap.get(keyEvent.key);
             if (visualKeymapping) {
+              keyEvent.preventDefault();
               this.commandService.executeCommand$.next(visualKeymapping);
             }
             break
 
           case ControlMode.COMMAND_MODE:
-            const commandKeymapping = CommandModeMap.get(key);
+            const commandKeymapping = CommandModeMap.get(keyEvent.key);
             if (commandKeymapping) {
+              keyEvent.preventDefault();
               this.commandService.executeCommand$.next(commandKeymapping);
             }
             break

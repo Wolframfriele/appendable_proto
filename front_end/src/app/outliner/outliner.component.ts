@@ -44,7 +44,6 @@ import { CommandPalleteComponent } from "../shared/ui/command-pallete/command-pa
 `
 })
 export default class OutlinerComponent {
-
   dateRangeService = inject(DateRangeService);
   entryService = inject(EntryService);
 

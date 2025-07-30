@@ -19,10 +19,7 @@ import { DurationVsEstimateComponent } from '../../../shared/ui/duration-vs-esti
       </div>
       <ul>
         @for (entry of viewEntries(); track $index; let idx = $index) {
-            <app-outliner-entry [entry]="entry" [hasChildren]="hasChildren(idx)"/>
-        }
-        @if (viewEntries().length === 0) {
-            <app-outliner-entry [entry]="emptyEntry" [hasChildren]="false" />
+            <app-outliner-entry [entry]="entry" [idx]="idx" [hasChildren]="hasChildren(idx)"/>
         }
       </ul>
     </div>
@@ -68,20 +65,6 @@ export class ViewComponent {
 
   titel = input.required<string>();
   viewEntries = input.required<Entry[]>();
-
-  emptyEntry: Entry = {
-    id: 0,
-    parent: undefined,
-    path: '/',
-    nesting: 0,
-    startTimestamp: new Date(),
-    endTimestamp: undefined,
-    text: '',
-    showTodo: false,
-    isDone: false,
-    estimatedDuration: 0,
-    tags: []
-  };
 
   hasChildren(idx: number): boolean {
     let nextIdx = idx + 1;

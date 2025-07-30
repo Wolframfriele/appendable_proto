@@ -43,7 +43,6 @@ export class DateRangeService {
     this.expand$
       .pipe(
         concatMap(() => {
-          console.log(`Loading more entries`);
           return this.http
             .get<NextDataJson>(`/api/earlier_entry/${this.toUrlDateTime.transform(this.state().start)}`)
             .pipe(catchError((err) => this.handleError(err)))

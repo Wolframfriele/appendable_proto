@@ -16,6 +16,8 @@ import { Entry } from "../../../model/entry.model";
 import { EntryInfoComponent } from "../entry-info/entry-info.component";
 import { DurationVsEstimateComponent } from "../../../shared/ui/duration-vs-estimate/duration-vs-estimate.component";
 import { EntryService } from "../../data/entry.service";
+import { ActiveEntryService } from "../../data/active-entry.service";
+import { RoundDatePipe } from "../../../pipes/round-date.pipe";
 
 @Component({
   selector: "app-outliner-entry",
@@ -81,7 +83,7 @@ import { EntryService } from "../../data/entry.service";
           }
         </div>
 
-        <div class="text-container" [ngStyle]="{ 'max-width': textWidth() }">
+        <div class="text-container" [class.entry-active]="isActive()" [ngStyle]="{ 'max-width': textWidth() }">
           @if (entry().showTodo) {
             <app-checkbox
               class="checkbox"
@@ -203,15 +205,23 @@ import { EntryService } from "../../data/entry.service";
         }
       }
 
-      .text-container:hover {
+      .entry-active {
         background-color: var(--lighter-black);
         border-radius: 5px;
-      }
+     }
+
+      /*.text-container:hover {*/
+      /*  background-color: var(--lighter-black);*/
+      /*  border-radius: 5px;*/
+      /*}*/
     }
   `,
 })
 export class OutlinerEntryComponent {
   entryService = inject(EntryService);
+  activeEntryService = inject(ActiveEntryService);
+
+  toRoundDate = new RoundDatePipe();
 
   entry = input.required<Entry>();
   updatedEntry = model<Entry>({
@@ -228,13 +238,19 @@ export class OutlinerEntryComponent {
     tags: [],
   });
 
+  idx = input.required<number>();
+
   hasChildren = input.required<boolean>();
-  entryIsHovered = signal(false);
   isMultiLine = signal(false);
 
   isDotHovered = signal(false);
   isMenuHovered = signal(false);
   isMenuOpen = computed(() => this.isDotHovered() || this.isMenuHovered());
+  isActive = computed(() => {
+    const idxMatchesActive = this.idx() === this.activeEntryService.activeEntryIdx();
+    const dayMatchesActive = this.toRoundDate.transform(this.entry().startTimestamp) === this.activeEntryService.activeDay();
+    return idxMatchesActive && dayMatchesActive
+  });
 
   duration: Signal<number> = computed(() => {
     let startTime = this.entry().startTimestamp;
