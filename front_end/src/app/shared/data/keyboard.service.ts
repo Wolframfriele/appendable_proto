@@ -38,15 +38,18 @@ export class KeyboardService {
       (command) => {
         switch (command) {
           case Command.SWITCH_TO_NORMAL_MODE:
+            (document.activeElement as HTMLElement).blur();
             this.state.set({ activeControlMode: ControlMode.NORMAL_MODE });
             break;
           case Command.SWITCH_TO_INSERT_MODE:
             this.state.set({ activeControlMode: ControlMode.INSERT_MODE });
             break;
           case Command.SWITCH_TO_VISUAL_MODE:
+            (document.activeElement as HTMLElement).blur();
             this.state.set({ activeControlMode: ControlMode.VISUAL_MODE });
             break;
           case Command.SWITCH_TO_COMMAND_MODE:
+            (document.activeElement as HTMLElement).blur();
             this.state.set({ activeControlMode: ControlMode.COMMAND_MODE });
             break;
         }
@@ -55,7 +58,7 @@ export class KeyboardService {
 
     this.keyboard$.subscribe(
       (keyEvent) => {
-        console.log(keyEvent);
+        // console.log(keyEvent.key);
         switch (this.activeControlMode()) {
           case ControlMode.NORMAL_MODE:
             const normalKeymapping = NormalModeMap.get(keyEvent.key);

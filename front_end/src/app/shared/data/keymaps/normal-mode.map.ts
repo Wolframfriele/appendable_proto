@@ -7,4 +7,6 @@ export const NormalModeMap = new Map<string, Command>([
   ['o', Command.ADD_NEW_CHILD_ENTRY],
   ['ArrowUp', Command.MOVE_TO_PREVIOUS_ENTRY],
   ['ArrowDown', Command.MOVE_TO_NEXT_ENTRY],
+  ['Enter', Command.ADD_NEW_ENTRY],
+  ['o', Command.ADD_NEW_CHILD_ENTRY],
 ]);

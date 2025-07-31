@@ -16,8 +16,9 @@ import { Entry } from "../../../model/entry.model";
 import { EntryInfoComponent } from "../entry-info/entry-info.component";
 import { DurationVsEstimateComponent } from "../../../shared/ui/duration-vs-estimate/duration-vs-estimate.component";
 import { EntryService } from "../../data/entry.service";
-import { ActiveEntryService } from "../../data/active-entry.service";
 import { RoundDatePipe } from "../../../pipes/round-date.pipe";
+import { ControlMode, KeyboardService } from "../../../shared/data/keyboard.service";
+import { Command, CommandService } from "../../../shared/data/command.service";
 
 @Component({
   selector: "app-outliner-entry",
@@ -208,18 +209,14 @@ import { RoundDatePipe } from "../../../pipes/round-date.pipe";
       .entry-active {
         background-color: var(--lighter-black);
         border-radius: 5px;
-     }
-
-      /*.text-container:hover {*/
-      /*  background-color: var(--lighter-black);*/
-      /*  border-radius: 5px;*/
-      /*}*/
+      }
     }
   `,
 })
 export class OutlinerEntryComponent {
   entryService = inject(EntryService);
-  activeEntryService = inject(ActiveEntryService);
+  keyboardService = inject(KeyboardService);
+  commandService = inject(CommandService);
 
   toRoundDate = new RoundDatePipe();
 
@@ -247,9 +244,9 @@ export class OutlinerEntryComponent {
   isMenuHovered = signal(false);
   isMenuOpen = computed(() => this.isDotHovered() || this.isMenuHovered());
   isActive = computed(() => {
-    const idxMatchesActive = this.idx() === this.activeEntryService.activeEntryIdx();
-    const dayMatchesActive = this.toRoundDate.transform(this.entry().startTimestamp) === this.activeEntryService.activeDay();
-    return idxMatchesActive && dayMatchesActive
+    const idxMatchesActive = this.idx() === this.entryService.activeEntryIdx();
+    const dayMatchesActive = this.toRoundDate.transform(this.entry().startTimestamp) === this.entryService.activeDay();
+    return idxMatchesActive && dayMatchesActive && this.keyboardService.activeControlMode() !== ControlMode.INSERT_MODE
   });
 
   duration: Signal<number> = computed(() => {
@@ -265,7 +262,6 @@ export class OutlinerEntryComponent {
   displayLineUnderBullet: Signal<boolean> = computed(() => {
     return this.hasChildren() || this.isMultiLine()
   })
-
 
   indentArray: Signal<number[]> = computed(() => {
     return Array(this.entry().nesting)
@@ -298,7 +294,14 @@ export class OutlinerEntryComponent {
   focusEntry() {
     const textBox = document.getElementById(this.entry().id.toString());
     textBox?.focus();
+    this.commandService.executeCommand$.next(Command.SWITCH_TO_INSERT_MODE);
+    this.entryService.activateEntryById(this.entry().id);
   }
+
+  // figure out how to get an onBecomesActive event and
+  // onLosesActive event
+  // Then move the logic in onFocusOut to onLosesActive
+  //
 
   onFocusOut() {
     if (this.entry() !== this.updatedEntry()) {
