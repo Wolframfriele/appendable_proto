@@ -26,6 +26,7 @@ impl<'r> FromRow<'r, SqliteRow> for Block {
         let tags: Vec<String> = row
             .try_get::<&str, &str>("tags")?
             .split(",")
+            .filter(|s| !s.is_empty())
             .map(str::to_string)
             .collect();
         Ok(Block {

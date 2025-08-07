@@ -1,8 +1,7 @@
 import { HttpClient, HttpHeaders } from "@angular/common/http";
 import { computed, inject, Injectable, signal } from "@angular/core";
 import { DateRangeService } from "./date-range.service";
-import { CommandService } from "../../shared/data/command.service";
-import { UrlDatetimePipe } from "../../pipes/url-datetime.pipe";
+import { Command, CommandService } from "../../shared/data/command.service";
 import { Block, RemoveBlock } from "../../model/block.model";
 import {
   catchError,
@@ -36,8 +35,6 @@ export class BlockService {
   private http = inject(HttpClient);
   private dateRangeService = inject(DateRangeService);
   private commandService = inject(CommandService);
-
-  private toUrlDateTime = new UrlDatetimePipe();
 
   private state = signal<BlockState>({
     blocks: [],
@@ -75,11 +72,10 @@ export class BlockService {
           this.http
             .get<
               BlockJson[]
-            >(`/api/blocks?start=${this.toUrlDateTime.transform(this.dateRangeService.start())}`)
+            >(`/api/blocks?start=${this.dateRangeService.start().toISOString()}`)
             .pipe(catchError((err) => this.handleError(err))),
         ),
         map((json: BlockJson[]) => mapToBlocks(json)),
-        //map((blocks) => this.appendEmptyBlock(blocks)),
         takeUntilDestroyed(),
       )
       .subscribe((blocks) => {
@@ -89,6 +85,14 @@ export class BlockService {
           loaded: true,
         }));
       });
+
+    this.commandService.executeCommand$.subscribe((command) => {
+      switch (command) {
+        case Command.ADD_NEW_BLOCK:
+          this.addNewBlock();
+          break;
+      }
+    });
   }
 
   private handleError(err: any) {
@@ -96,8 +100,8 @@ export class BlockService {
     return EMPTY;
   }
 
-  private appendEmptyBlock(blocks: Block[]): Block[] {
-    blocks.push({
+  private addNewBlock() {
+    this.add$.next({
       id: 0,
       text: "",
       project: undefined,
@@ -107,6 +111,5 @@ export class BlockService {
       duration: 0,
       tags: [],
     });
-    return blocks;
   }
 }

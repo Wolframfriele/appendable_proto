@@ -1,8 +1,7 @@
 import { HttpClient } from "@angular/common/http";
 import { computed, inject, Injectable, signal } from "@angular/core";
 import { takeUntilDestroyed, toObservable } from "@angular/core/rxjs-interop";
-import { catchError, concatMap, EMPTY, map, Subject } from "rxjs";
-import { UrlDatetimePipe } from "../../pipes/url-datetime.pipe";
+import { catchError, concatMap, EMPTY, map, startWith, Subject } from "rxjs";
 
 interface DateRangeState {
   start: Date;
@@ -19,8 +18,6 @@ interface NextDataJson {
 })
 export class DateRangeService {
   http = inject(HttpClient);
-
-  toUrlDateTime = new UrlDatetimePipe();
 
   // state
   private state = signal<DateRangeState>({
@@ -42,10 +39,12 @@ export class DateRangeService {
   constructor() {
     this.expand$
       .pipe(
+        // trigger first call to return the last available data
+        startWith(undefined),
         concatMap(() => {
           return this.http
             .get<NextDataJson>(
-              `/api/earlier_blocks/${this.toUrlDateTime.transform(this.state().start)}`,
+              `/api/earlier_blocks/${this.state().start.toISOString()}`,
             )
             .pipe(catchError((err) => this.handleError(err)));
         }),

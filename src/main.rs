@@ -7,7 +7,7 @@ use axum::{
 };
 
 use anyhow::{anyhow, Error};
-use chrono::{Local, NaiveDateTime, NaiveTime};
+use chrono::{DateTime, Utc};
 use serde::Deserialize;
 use std::sync::Arc;
 
@@ -46,8 +46,8 @@ async fn main() {
 
 #[derive(Deserialize)]
 struct RangeParams {
-    start: Option<NaiveDateTime>,
-    end: Option<NaiveDateTime>,
+    start: Option<DateTime<Utc>>,
+    end: Option<DateTime<Utc>>,
 }
 
 async fn get_blocks(
@@ -61,16 +61,8 @@ async fn get_blocks(
     Ok(Json(
         select_blocks(
             &db,
-            params.start.unwrap_or(
-                Local::now()
-                    .date_naive()
-                    .and_time(NaiveTime::from_hms_opt(0, 0, 0).expect("Valid start time")),
-            ),
-            params.end.unwrap_or(
-                Local::now()
-                    .date_naive()
-                    .and_time(NaiveTime::from_hms_opt(23, 59, 59).expect("Valid end time")),
-            ),
+            params.start.unwrap_or(day_start()).naive_utc(),
+            params.end.unwrap_or(day_end()).naive_utc(),
         )
         .await,
     ))
@@ -94,16 +86,8 @@ async fn get_entries(
     Ok(Json(
         select_entries(
             &db,
-            params.start.unwrap_or(
-                Local::now()
-                    .date_naive()
-                    .and_time(NaiveTime::from_hms_opt(0, 0, 0).expect("Valid start time")),
-            ),
-            params.end.unwrap_or(
-                Local::now()
-                    .date_naive()
-                    .and_time(NaiveTime::from_hms_opt(23, 59, 59).expect("Valid end time")),
-            ),
+            params.start.unwrap_or(day_start()).naive_utc(),
+            params.end.unwrap_or(day_end()).naive_utc(),
         )
         .await,
     ))
@@ -152,11 +136,13 @@ async fn delete_entry_api(
 }
 
 async fn get_first_block_timestamp_before(
-    Path(last_data): Path<NaiveDateTime>,
+    Path(last_data): Path<DateTime<Utc>>,
     db: State<Arc<Database>>,
 ) -> Result<Json<NextDataResponse>, BadRequestError> {
     println!("Get next entry before: {last_data}");
-    Ok(Json(select_earlier_timestamp(&db, &last_data).await?))
+    Ok(Json(
+        select_earlier_timestamp(&db, &last_data.naive_utc()).await?,
+    ))
 }
 // Error handling
 struct NotFoundError(Error);
@@ -197,4 +183,22 @@ where
 
 async fn handler_404() -> impl IntoResponse {
     (StatusCode::NOT_FOUND, "nothing to see here")
+}
+
+fn day_start() -> DateTime<Utc> {
+    let now = Utc::now();
+    now.date_naive()
+        .and_hms_opt(0, 0, 0)
+        .unwrap()
+        .and_local_timezone(Utc)
+        .unwrap()
+}
+
+fn day_end() -> DateTime<Utc> {
+    let now = Utc::now();
+    now.date_naive()
+        .and_hms_opt(23, 59, 59)
+        .unwrap()
+        .and_local_timezone(Utc)
+        .unwrap()
 }

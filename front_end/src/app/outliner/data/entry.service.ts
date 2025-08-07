@@ -19,8 +19,6 @@ import {
   mapToJsonEntry,
 } from "../../model/entry.mapper";
 import { EntryJson } from "../../model/entry.interface";
-import { UrlDatetimePipe } from "../../pipes/url-datetime.pipe";
-import { RoundDatePipe } from "../../pipes/round-date.pipe";
 import { Command, CommandService } from "../../shared/data/command.service";
 
 export interface EntryState {
@@ -41,9 +39,6 @@ export class EntryService {
   private http = inject(HttpClient);
   private dateRangeService = inject(DateRangeService);
   private commandService = inject(CommandService);
-
-  private toUrlDateTime = new UrlDatetimePipe();
-  private toRoundDate = new RoundDatePipe();
 
   // state
   private state = signal<EntryState>({
@@ -109,7 +104,7 @@ export class EntryService {
           this.http
             .get<
               EntryJson[]
-            >(`/api/entries?start=${this.toUrlDateTime.transform(this.dateRangeService.start())}`)
+            >(`/api/entries?start=${this.dateRangeService.start().toISOString()}`)
             .pipe(catchError((err) => this.handleError(err))),
         ),
         map((json: EntryJson[]) => mapToEntries(json)),

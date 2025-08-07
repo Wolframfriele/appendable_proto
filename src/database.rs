@@ -23,6 +23,7 @@ pub async fn insert_new_block(db: &Database, block: Block) -> Result<Block> {
 }
 
 async fn update_end_timestamps_of_unclosed_blocks(db: &Database, block: &Block) -> Result<()> {
+    println!("updating time of old entries");
     sqlx::query(
         "
     UPDATE blocks
@@ -38,20 +39,19 @@ async fn update_end_timestamps_of_unclosed_blocks(db: &Database, block: &Block) 
 }
 
 async fn insert_block(db: &Database, block: Block) -> Result<i64> {
+    println!("inserting new block");
     let new_block_id = sqlx::query_as::<_, ResultBlock>(
         "
         INSERT INTO blocks (
             text,
             project,
             start,
-            end,
-            duration,
+            duration
         ) VALUES (
             ?1,
             ?2,
-            ?3,
-            ?4,
-            ?5,
+            DATETIME(?3),
+            ?4
         ) RETURNING block_id;
             ",
     )
@@ -66,6 +66,7 @@ async fn insert_block(db: &Database, block: Block) -> Result<i64> {
 }
 
 pub async fn select_block(db: &Database, block_id: i64) -> Result<Block> {
+    println!("getting the newly inserted block");
     Ok(sqlx::query_as::<_, Block>(
         "
     SELECT
@@ -76,11 +77,14 @@ pub async fn select_block(db: &Database, block_id: i64) -> Result<Block> {
        	blocks.start,
        	blocks.end,
        	blocks.duration,
+        COALESCE(GROUP_CONCAT(DISTINCT tags.name), '') AS tags
     FROM blocks
 
     LEFT OUTER JOIN projects ON blocks.project = projects.project_id
     LEFT JOIN tagged_blocks ON blocks.block_id = tagged_blocks.block_fk
-    WHERE blocks.block_id = ?1;
+    LEFT JOIN tags ON tagged_blocks.tag_fk = tags.tag_id
+    WHERE blocks.block_id = ?1
+    GROUP BY blocks.block_id;
         ",
     )
     .bind(block_id)
@@ -145,30 +149,30 @@ pub async fn select_entry(db: &Database, entry_id: i64) -> Result<Entry> {
 pub async fn select_entries(db: &Database, start: NaiveDateTime, end: NaiveDateTime) -> Vec<Entry> {
     sqlx::query_as::<_, Entry>(
         "
-        WITH entries_for_range AS (
-            SELECT
-                blocks.block_id as parent,
-                entries.entry_id,
-                entries.nesting,
-                entries.text,
-                entries.show_todo,
-                entries.is_done
-            FROM blocks
+    WITH entries_for_range AS (
+        SELECT
+            blocks.block_id as parent,
+            entries.entry_id,
+            entries.nesting,
+            entries.text,
+            entries.show_todo,
+            entries.is_done
+        FROM blocks
 
-            LEFT JOIN entries ON entries.parent = blocks.block_id
+        LEFT JOIN entries ON entries.parent = blocks.block_id
 
-            WHERE blocks.start > DATETIME(?1) AND blocks.start < DATETIME(?2)
+        WHERE blocks.start > DATETIME(?1) AND blocks.start < DATETIME(?2)
 
-            GROUP BY
-                blocks.block_id,
-                entries.entry_id
-            ORDER BY
-                blocks.block_id,
-                entries.entry_id
-	    )
-		SELECT * FROM entries_for_range
-		WHERE entries_for_range.entry_id IS NOT NULL;
-            ",
+        GROUP BY
+            blocks.block_id,
+            entries.entry_id
+        ORDER BY
+            blocks.block_id,
+            entries.entry_id
+    )
+	SELECT * FROM entries_for_range
+	WHERE entries_for_range.entry_id IS NOT NULL;
+        ",
     )
     .bind(start)
     .bind(end)
@@ -240,7 +244,7 @@ async fn insert_entry(db: &Database, entry: &Entry) -> Result<i64> {
         ?2,
         ?3,
         ?4,
-        ?5,
+        ?5
     ) RETURNING entry_id;
         ",
     )
