@@ -1,10 +1,10 @@
-import { Pipe, PipeTransform } from '@angular/core';
+import { Pipe, PipeTransform } from "@angular/core";
 
 @Pipe({
-  name: 'displayDate'
+  standalone: true,
+  name: "displayDate",
 })
 export class DisplayDatePipe implements PipeTransform {
-
   transform(date: Date): string {
     return date.toDateString();
   }

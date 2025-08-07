@@ -1,15 +1,10 @@
 export type Entry = {
   id: number;
-  parent: number | undefined;
-  path: string;
+  parent: number;
   nesting: number;
-  startTimestamp: Date;
-  endTimestamp: Date | undefined;
   text: string;
   showTodo: boolean;
   isDone: boolean;
-  estimatedDuration: number | undefined;
-  tags: string[];
-}
+};
 
-export type RemoveEntry = { id: Entry['id'], withChildren: boolean };
+export type RemoveEntry = { id: Entry["id"] };

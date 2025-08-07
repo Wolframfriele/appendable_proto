@@ -1,6 +1,6 @@
 /* You can add global styles to this file, and also import other style files */
 :root {
-  --main-bg-color: #1e1e1e;
+  --background: #161616ff;
   --darker-black: #0f0f0f;
   --lighter-black: #2e2e2e;
   --title-color: white;
@@ -14,13 +14,23 @@
   --header-font-family:
     "DejaVu Sans", "SF Pro Display", "Segoe UI Light", "sans-serif";
   --logo-brightness: 100%;
+
+  --yellow: #fae3b0;
+  --red: #ee5396;
+  --pink: #ff7eb6;
+  --green: #25be6a;
+  --cyan: #5ae0df;
+  --deep-cyan: #2dc7c4;
+  --blue: #33b1ff;
+  --blue-purple: #78a9ff;
+  --magenta: #be95ff;
 }
 
 @media (prefers-color-scheme: light) {
   :root {
-    --main-bg-color: #f4f4f4;
+    --background: #f6f2eecc;
     --darker-black: #a1a1a1;
-    --lighter-black: #CFCFCF;
+    --lighter-black: #cfcfcf;
     --title-color: #0f0f0f;
     --text-color: #303030;
     --link-color: #202020;
@@ -33,7 +43,7 @@
 }
 
 body {
-  background-color: var(--main-bg-color);
+  background-color: var(--background);
   font-family: var(--font-family);
   color: var(--text-color);
   padding: 0;
@@ -54,7 +64,7 @@ li {
 }
 
 a {
-  color: var(--link-color);
+  color: var(--deep-cyan);
   font-size: 1.25rem;
 }
 
@@ -86,4 +96,8 @@ h2 {
 h3 {
   font-weight: 400;
   font-size: 1.5rem;
+}
+
+.hidden {
+  opacity: 0;
 }

@@ -2,66 +2,53 @@ use chrono::{DateTime, Utc};
 use serde::{Deserialize, Serialize};
 use sqlx::{sqlite::SqliteRow, FromRow, Row};
 
+#[derive(Serialize, Deserialize, Debug)]
+pub struct Block {
+    pub block_id: i64,
+    pub text: String,
+    pub project: Option<i64>,
+    pub project_name: Option<String>,
+    pub start: DateTime<Utc>,
+    pub end: Option<DateTime<Utc>>,
+    pub duration: i64,
+    pub tags: Vec<String>,
+}
+
+impl<'r> FromRow<'r, SqliteRow> for Block {
+    fn from_row(row: &'r SqliteRow) -> Result<Self, sqlx::Error> {
+        let block_id = row.try_get("block_id")?;
+        let text = row.try_get("text")?;
+        let project = row.try_get("project")?;
+        let project_name = row.try_get("project_name")?;
+        let start = row.try_get("start")?;
+        let end = row.try_get("end")?;
+        let duration = row.try_get("duration")?;
+        let tags: Vec<String> = row
+            .try_get::<&str, &str>("tags")?
+            .split(",")
+            .map(str::to_string)
+            .collect();
+        Ok(Block {
+            block_id,
+            text,
+            project,
+            project_name,
+            start,
+            end,
+            duration,
+            tags,
+        })
+    }
+}
+
 #[derive(FromRow, Serialize, Deserialize, Debug)]
 pub struct Entry {
     pub entry_id: i64,
     pub parent: Option<i64>,
-    pub path: String,
     pub nesting: i64,
-    pub start_timestamp: DateTime<Utc>,
-    pub end_timestamp: Option<DateTime<Utc>>,
     pub text: String,
     pub show_todo: bool,
     pub is_done: bool,
-    pub estimated_duration: i64,
-}
-
-#[derive(Serialize, Deserialize, Debug)]
-pub struct EntryAndTags {
-    pub entry_id: i64,
-    pub parent: Option<i64>,
-    pub path: String,
-    pub nesting: i64,
-    pub start_timestamp: DateTime<Utc>,
-    pub end_timestamp: Option<DateTime<Utc>>,
-    pub text: String,
-    pub show_todo: bool,
-    pub is_done: bool,
-    pub estimated_duration: i64,
-    pub tags: Vec<String>,
-}
-
-impl<'r> FromRow<'r, SqliteRow> for EntryAndTags {
-    fn from_row(row: &'r SqliteRow) -> Result<Self, sqlx::Error> {
-        let entry_id = row.try_get("entry_id")?;
-        let parent = row.try_get("parent")?;
-        let path = row.try_get("path")?;
-        let nesting = row.try_get("nesting")?;
-        let start_timestamp = row.try_get("start_timestamp")?;
-        let end_timestamp = row.try_get("end_timestamp")?;
-        let text = row.try_get("text")?;
-        let show_todo = row.try_get("show_todo")?;
-        let is_done = row.try_get("is_done")?;
-        let estimated_duration = row.try_get("estimated_duration")?;
-        let tags: Vec<String> = row
-            .try_get::<&str, &str>("tags")?
-            .split(", ")
-            .map(str::to_string)
-            .collect();
-        Ok(EntryAndTags {
-            entry_id,
-            parent,
-            path,
-            nesting,
-            start_timestamp,
-            end_timestamp,
-            text,
-            show_todo,
-            is_done,
-            estimated_duration,
-            tags,
-        })
-    }
 }
 
 #[derive(FromRow, Serialize, Deserialize, Debug)]
@@ -77,6 +64,11 @@ pub struct ResultEntry {
 }
 
 #[derive(FromRow, Serialize, Deserialize, Debug)]
+pub struct ResultBlock {
+    pub block_id: i64,
+}
+
+#[derive(FromRow, Serialize, Deserialize, Debug)]
 pub struct NextDataResponse {
-    pub entry_timestamp: DateTime<Utc>,
+    pub block_timestamp: DateTime<Utc>,
 }

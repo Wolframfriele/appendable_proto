@@ -4,22 +4,20 @@ import {
   forwardRef,
   HostListener,
   Input,
-  Renderer2
-} from '@angular/core';
-import {
-  ControlValueAccessor,
-  NG_VALUE_ACCESSOR
-} from '@angular/forms';
+  Renderer2,
+} from "@angular/core";
+import { ControlValueAccessor, NG_VALUE_ACCESSOR } from "@angular/forms";
 
 @Directive({
-  selector: '[contenteditableModel]',
+  standalone: true,
+  selector: "[contenteditableModel]",
   providers: [
     {
       provide: NG_VALUE_ACCESSOR,
       useExisting: forwardRef(() => ContenteditableDirective),
-      multi: true
-    }
-  ]
+      multi: true,
+    },
+  ],
 })
 export class ContenteditableDirective implements ControlValueAccessor {
   @Input() contenteditableModel: any;
@@ -27,22 +25,29 @@ export class ContenteditableDirective implements ControlValueAccessor {
   private onChange = (_: any) => {};
   private onTouched = () => {};
 
-  constructor(private el: ElementRef, private renderer: Renderer2) {}
+  constructor(
+    private el: ElementRef,
+    private renderer: Renderer2,
+  ) {}
 
-  @HostListener('input', ['$event'])
+  @HostListener("input", ["$event"])
   onInput(): void {
     const value = this.el.nativeElement.innerText;
     this.onChange(value);
   }
 
-  @HostListener('blur')
+  @HostListener("blur")
   onBlur(): void {
     this.onTouched();
   }
 
   writeValue(value: any): void {
     if (value !== this.el.nativeElement.innerText) {
-      this.renderer.setProperty(this.el.nativeElement, 'innerText', value ?? '');
+      this.renderer.setProperty(
+        this.el.nativeElement,
+        "innerText",
+        value ?? "",
+      );
     }
   }
 
@@ -55,6 +60,10 @@ export class ContenteditableDirective implements ControlValueAccessor {
   }
 
   setDisabledState?(isDisabled: boolean): void {
-    this.renderer.setProperty(this.el.nativeElement, 'contentEditable', !isDisabled);
+    this.renderer.setProperty(
+      this.el.nativeElement,
+      "contentEditable",
+      !isDisabled,
+    );
   }
 }

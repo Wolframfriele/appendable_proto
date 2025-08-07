@@ -1,21 +1,21 @@
-import { HttpClient } from '@angular/common/http';
-import { computed, inject, Injectable, signal } from '@angular/core';
-import { takeUntilDestroyed, toObservable } from '@angular/core/rxjs-interop';
-import { catchError, concatMap, EMPTY, map, Subject } from 'rxjs';
-import { UrlDatetimePipe } from '../../pipes/url-datetime.pipe';
+import { HttpClient } from "@angular/common/http";
+import { computed, inject, Injectable, signal } from "@angular/core";
+import { takeUntilDestroyed, toObservable } from "@angular/core/rxjs-interop";
+import { catchError, concatMap, EMPTY, map, Subject } from "rxjs";
+import { UrlDatetimePipe } from "../../pipes/url-datetime.pipe";
 
 interface DateRangeState {
   start: Date;
   end: Date;
-  error: String | null,
+  error: String | null;
 }
 
 interface NextDataJson {
-  entry_timestamp: string,
+  block_timestamp: string;
 }
 
 @Injectable({
-  providedIn: 'root'
+  providedIn: "root",
 })
 export class DateRangeService {
   http = inject(HttpClient);
@@ -44,10 +44,12 @@ export class DateRangeService {
       .pipe(
         concatMap(() => {
           return this.http
-            .get<NextDataJson>(`/api/earlier_entry/${this.toUrlDateTime.transform(this.state().start)}`)
-            .pipe(catchError((err) => this.handleError(err)))
+            .get<NextDataJson>(
+              `/api/earlier_blocks/${this.toUrlDateTime.transform(this.state().start)}`,
+            )
+            .pipe(catchError((err) => this.handleError(err)));
         }),
-        map(response => this.mapToNextDate(response)),
+        map((response) => this.mapToNextDate(response)),
         takeUntilDestroyed(),
       )
       .subscribe((response) =>
@@ -55,22 +57,38 @@ export class DateRangeService {
           start: response,
           end: this.getTodayEnd(),
           error: null,
-        })
+        }),
       );
   }
 
   private getTodayStart(): Date {
     const now = new Date();
-    return new Date(now.getFullYear(), now.getMonth(), now.getDate(), 0, 0, 0, 0);
+    return new Date(
+      now.getFullYear(),
+      now.getMonth(),
+      now.getDate(),
+      0,
+      0,
+      0,
+      0,
+    );
   }
 
   private getTodayEnd(): Date {
     const now = new Date();
-    return new Date(now.getFullYear(), now.getMonth(), now.getDate(), 23, 59, 59, 999);
+    return new Date(
+      now.getFullYear(),
+      now.getMonth(),
+      now.getDate(),
+      23,
+      59,
+      59,
+      999,
+    );
   }
 
   private mapToNextDate(response: NextDataJson): Date {
-    let nextEntryDate = new Date(response.entry_timestamp);
+    let nextEntryDate = new Date(response.block_timestamp);
     nextEntryDate.setUTCHours(0, 0, 0, 0);
     return nextEntryDate;
   }

@@ -2,7 +2,7 @@ use axum::{
     extract::{Path, Query, State},
     http::StatusCode,
     response::{IntoResponse, Response},
-    routing::get,
+    routing::{get, put},
     Json, Router,
 };
 
@@ -12,12 +12,12 @@ use serde::Deserialize;
 use std::sync::Arc;
 
 use track_proto::{
-    database::select_entries,
-    models::{Entry, EntryAndTags, NextDataResponse},
+    database::{insert_new_block, select_blocks, select_entries},
+    models::{Block, Entry, NextDataResponse},
 };
 
 use track_proto::database::{
-    delete_entry, insert_new_entry, select_earlier_timestamp, select_entry, update_entry, Database,
+    delete_entry, insert_new_entry, select_earlier_timestamp, update_entry, Database,
 };
 
 #[tokio::main]
@@ -27,14 +27,15 @@ async fn main() {
     let state = Arc::new(Database::new().await.unwrap());
 
     let app = Router::new()
+        .route("/api/blocks", get(get_blocks).post(post_block))
         .route("/api/entries", get(get_entries).post(post_entry))
         .route(
             "/api/entries/{entry_id}",
-            get(get_entry).put(put_entry).delete(delete_entry_api),
+            put(put_entry).delete(delete_entry_api),
         )
         .route(
-            "/api/earlier_entry/{last_data}",
-            get(get_first_entry_timestamp_before),
+            "/api/earlier_blocks/{last_data}",
+            get(get_first_block_timestamp_before),
         )
         .fallback(handler_404)
         .with_state(state);
@@ -43,24 +44,49 @@ async fn main() {
     axum::serve(listener, app).await.unwrap();
 }
 
-async fn get_entry(
-    Path(entry_id): Path<i64>,
-    db: State<Arc<Database>>,
-) -> Result<Json<Entry>, NotFoundError> {
-    print!("Getting entry: {entry_id}");
-    Ok(Json(select_entry(&db, entry_id).await?))
-}
-
 #[derive(Deserialize)]
-struct GetEntriesParams {
+struct RangeParams {
     start: Option<NaiveDateTime>,
     end: Option<NaiveDateTime>,
 }
 
-async fn get_entries(
-    params: Query<GetEntriesParams>,
+async fn get_blocks(
+    params: Query<RangeParams>,
     db: State<Arc<Database>>,
-) -> Result<Json<Vec<EntryAndTags>>, NotFoundError> {
+) -> Result<Json<Vec<Block>>, NotFoundError> {
+    println!(
+        "Getting blocks between: {:?} and {:?}",
+        params.start, params.end
+    );
+    Ok(Json(
+        select_blocks(
+            &db,
+            params.start.unwrap_or(
+                Local::now()
+                    .date_naive()
+                    .and_time(NaiveTime::from_hms_opt(0, 0, 0).expect("Valid start time")),
+            ),
+            params.end.unwrap_or(
+                Local::now()
+                    .date_naive()
+                    .and_time(NaiveTime::from_hms_opt(23, 59, 59).expect("Valid end time")),
+            ),
+        )
+        .await,
+    ))
+}
+
+async fn post_block(
+    db: State<Arc<Database>>,
+    axum::extract::Json(payload): axum::extract::Json<Block>,
+) -> Result<Json<Block>, BadRequestError> {
+    Ok(Json(insert_new_block(&db, payload).await?))
+}
+
+async fn get_entries(
+    params: Query<RangeParams>,
+    db: State<Arc<Database>>,
+) -> Result<Json<Vec<Entry>>, NotFoundError> {
     println!(
         "Getting entries between: {:?} and {:?}",
         params.start, params.end
@@ -125,7 +151,7 @@ async fn delete_entry_api(
     }
 }
 
-async fn get_first_entry_timestamp_before(
+async fn get_first_block_timestamp_before(
     Path(last_data): Path<NaiveDateTime>,
     db: State<Arc<Database>>,
 ) -> Result<Json<NextDataResponse>, BadRequestError> {

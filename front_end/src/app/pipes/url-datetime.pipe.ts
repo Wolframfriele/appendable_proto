@@ -1,13 +1,11 @@
-import { formatDate } from '@angular/common';
-import { Pipe, PipeTransform } from '@angular/core';
+import { formatDate } from "@angular/common";
+import { Pipe, PipeTransform } from "@angular/core";
 
 @Pipe({
-  name: 'urlDatetime'
+  name: "urlDatetime",
 })
 export class UrlDatetimePipe implements PipeTransform {
-
-  transform(value: Date): unknown {
-    return formatDate(value, 'yyyy-MM-ddTHH:mm:ss', 'en-gb');
+  transform(value: Date): string {
+    return formatDate(value, "yyyy-MM-ddTHH:mm:ss", "en-gb");
   }
-
 }

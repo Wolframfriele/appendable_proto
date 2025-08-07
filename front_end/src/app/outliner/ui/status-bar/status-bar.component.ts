@@ -1,8 +1,9 @@
-import { Component } from '@angular/core';
-import { ControlModeComponent } from './control-mode/control-mode.component';
+import { Component } from "@angular/core";
+import { ControlModeComponent } from "./control-mode/control-mode.component";
 
 @Component({
-  selector: 'app-status-bar',
+  standalone: true,
+  selector: "app-status-bar",
   imports: [ControlModeComponent],
   template: `
     <div class="status-bar-container">
@@ -19,7 +20,6 @@ import { ControlModeComponent } from './control-mode/control-mode.component';
     .filter {
       margin: 0.3rem 0.3rem;
     }
-`
+  `,
 })
-export class StatusBarComponent {
-}
+export class StatusBarComponent {}

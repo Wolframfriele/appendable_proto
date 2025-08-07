@@ -9,15 +9,13 @@ import {
   Signal,
 } from "@angular/core";
 import { CheckboxComponent } from "../checkbox/checkbox.component";
-import { NgStyle } from "@angular/common";
-import { FormsModule } from '@angular/forms';
+import { FormsModule } from "@angular/forms";
 import { ContenteditableDirective } from "../../../model/contenteditable.model";
 import { Entry } from "../../../model/entry.model";
-import { EntryInfoComponent } from "../entry-info/entry-info.component";
 import { DurationVsEstimateComponent } from "../../../shared/ui/duration-vs-estimate/duration-vs-estimate.component";
 import { EntryService } from "../../data/entry.service";
 import { RoundDatePipe } from "../../../pipes/round-date.pipe";
-import { ControlMode, KeyboardService } from "../../../shared/data/keyboard.service";
+import { KeyboardService } from "../../../shared/data/keyboard.service";
 import { Command, CommandService } from "../../../shared/data/command.service";
 
 @Component({
@@ -26,34 +24,17 @@ import { Command, CommandService } from "../../../shared/data/command.service";
   imports: [
     CheckboxComponent,
     DurationVsEstimateComponent,
-    NgStyle,
     FormsModule,
     ContenteditableDirective,
-    EntryInfoComponent
   ],
   template: `
     <li>
-      @if (entry().parent === null) {
-        <app-entry-info
-          [startTime]="updatedEntry().startTimestamp"
-          [duration]="duration()"
-          [estimate]="updatedEntry().estimatedDuration"
-          [tags]="entry().tags"
-        ></app-entry-info>
-      }
-
-      <div
-        class="text-elements-container"
-        (click)="focusEntry()"
-      >
+      <div class="text-elements-container" (click)="focusEntry()">
         @for (number of indentArray(); track $index) {
           <span class="leading-line"></span>
         }
 
-        <span
-          class="line"
-          [ngStyle]="{ opacity: displayLineUnderBullet() ? '100' : '0' }"
-        ></span>
+        <span class="line" class="hidden"></span>
 
         <div class="dot-container">
           <span
@@ -69,10 +50,8 @@ import { Command, CommandService } from "../../../shared/data/command.service";
               (mouseleave)="isMenuHovered.set(false)"
             >
               <ul class="menu-items">
-                <li
-                  (click)="onTodoToggled()"
-                >
-                  @if(updatedEntry().showTodo) {
+                <li (click)="onTodoToggled()">
+                  @if (updatedEntry().showTodo) {
                     Hide todo
                   } @else {
                     Make todo
@@ -84,27 +63,24 @@ import { Command, CommandService } from "../../../shared/data/command.service";
           }
         </div>
 
-        <div class="text-container" [class.entry-active]="isActive()" [ngStyle]="{ 'max-width': textWidth() }">
+        <div
+          class="text-container"
+          [class.entry-active]="false"
+          [style.max-width]="textWidth()"
+        >
           @if (entry().showTodo) {
             <app-checkbox
               class="checkbox"
               [checked]="updatedEntry().isDone"
               (checkedToggle)="onCheckboxToggled($event)"
             />
-
-            <app-duration-vs-estimate
-              class="duration-component"
-              [duration]="duration()"
-              [estimate]="updatedEntry().estimatedDuration"
-            />
           }
           <div
             [id]="entry().id"
             class="text"
+            [class.done]="entry().isDone"
             [contentEditable]="true"
             [(ngModel)]="updatedEntry().text"
-            [ngStyle]="{ 'text-decoration': entry().isDone ? 'line-through' : '' }"
-            (focusout)="onFocusOut()"
             contenteditableModel
           ></div>
         </div>
@@ -112,32 +88,25 @@ import { Command, CommandService } from "../../../shared/data/command.service";
     </li>
   `,
   styles: `
-   .text-elements-container {
+    .text-elements-container {
       display: flex;
       flex-wrap: wrap;
       justify-content: flex-start;
       align-items: stretch;
       gap: 0.5rem;
 
-      .line {
-        border-left: 1px solid var(--secondary-text);
-        margin-top: 1rem;
-        margin-left: 1rem;
+      .dot-container {
+        width: 0.5rem;
+        margin: 0 0.4rem;
       }
 
-     .dot-container {
-        width: 1rem;
-     }
-
       .dot {
-        height: 0.5rem;
-        width: 0.5rem;
+        display: block;
+        height: 0.4rem;
+        width: 0.4rem;
         background-color: var(--secondary-text);
         border-radius: 50%;
-        margin-left: -0.75rem;
         margin-top: 0.75rem;
-        margin-right: 0.5rem;
-        float: left;
       }
 
       .dot::before {
@@ -147,10 +116,10 @@ import { Command, CommandService } from "../../../shared/data/command.service";
         inset-inline: -0.3rem;
         width: 1.2rem;
         height: 1.2rem;
-        display: inline-block
+        display: inline-block;
       }
 
-      .dot:hover  {
+      .dot:hover {
         background-color: white;
       }
 
@@ -158,9 +127,9 @@ import { Command, CommandService } from "../../../shared/data/command.service";
         background-color: var(--lighter-black);
         position: absolute;
         z-index: 1;
-        transform: translate(-0.3rem, 0.9rem);
+        transform: translate(0.4rem, 0.1rem);
         border-radius: 5px;
-        box-shadow: 0px 5px 8px 0px rgba(0,0,0,0.05);
+        box-shadow: 0px 5px 8px 0px rgba(0, 0, 0, 0.05);
         font-size: 0.9rem;
         ul {
           padding: 0;
@@ -177,7 +146,7 @@ import { Command, CommandService } from "../../../shared/data/command.service";
       }
 
       .leading-line {
-        border-left: 1px solid var(--secondary-text);
+        border-left: 1px solid var(--lighter-black);
         margin-left: 1rem;
       }
 
@@ -191,9 +160,7 @@ import { Command, CommandService } from "../../../shared/data/command.service";
       }
 
       .text-container {
-        padding: 0;
-        padding: 3px 0.5rem;
-        width: 100%;
+        padding: 0.1rem 0;
         min-height: 1.5rem;
 
         .duration-component {
@@ -211,6 +178,10 @@ import { Command, CommandService } from "../../../shared/data/command.service";
         border-radius: 5px;
       }
     }
+
+    .done {
+      text-decoration: line-through;
+    }
   `,
 })
 export class OutlinerEntryComponent {
@@ -223,45 +194,31 @@ export class OutlinerEntryComponent {
   entry = input.required<Entry>();
   updatedEntry = model<Entry>({
     id: 0,
-    parent: undefined,
-    path: '',
+    parent: 0,
     nesting: 0,
-    startTimestamp: new Date(),
-    endTimestamp: undefined,
-    text: '',
+    text: "",
     showTodo: false,
     isDone: false,
-    estimatedDuration: 0,
-    tags: [],
   });
 
   idx = input.required<number>();
 
-  hasChildren = input.required<boolean>();
   isMultiLine = signal(false);
 
   isDotHovered = signal(false);
   isMenuHovered = signal(false);
   isMenuOpen = computed(() => this.isDotHovered() || this.isMenuHovered());
-  isActive = computed(() => {
-    const idxMatchesActive = this.idx() === this.entryService.activeEntryIdx();
-    const dayMatchesActive = this.toRoundDate.transform(this.entry().startTimestamp) === this.entryService.activeDay();
-    return idxMatchesActive && dayMatchesActive && this.keyboardService.activeControlMode() !== ControlMode.INSERT_MODE
-  });
-
-  duration: Signal<number> = computed(() => {
-    let startTime = this.entry().startTimestamp;
-    let endTime = this.entry().endTimestamp;
-
-    if (endTime !== undefined && startTime !== undefined) {
-      return Math.floor((endTime.getTime() - startTime.getTime()) / 1000);
-    }
-    return 0;
-  })
-
-  displayLineUnderBullet: Signal<boolean> = computed(() => {
-    return this.hasChildren() || this.isMultiLine()
-  })
+  // isActive = computed(() => {
+  //   const idxMatchesActive = this.idx() === this.entryService.activeEntryIdx();
+  //   const dayMatchesActive =
+  //     this.toRoundDate.transform(this.entry().startTimestamp) ===
+  //     this.entryService.activeDay();
+  //   return (
+  //     idxMatchesActive &&
+  //     dayMatchesActive &&
+  //     this.keyboardService.activeControlMode() !== ControlMode.INSERT_MODE
+  //   );
+  // });
 
   indentArray: Signal<number[]> = computed(() => {
     return Array(this.entry().nesting)
@@ -270,32 +227,29 @@ export class OutlinerEntryComponent {
   });
 
   textWidth: Signal<string> = computed(() => {
-    let startWidth = 45;
+    let startWidth = 40;
     startWidth = startWidth - this.entry().nesting * 1.5;
     return `${startWidth}rem`;
   });
 
   constructor() {
-    effect(() => this.updatedEntry.set({
-      id: this.entry().id,
-      parent: this.entry().parent,
-      path: this.entry().path,
-      nesting: this.entry().nesting,
-      startTimestamp: this.entry().startTimestamp,
-      endTimestamp: this.entry().endTimestamp,
-      text: this.entry().text,
-      showTodo: this.entry().showTodo,
-      isDone: this.entry().isDone,
-      estimatedDuration: this.entry().estimatedDuration,
-      tags: this.entry().tags,
-    }))
+    effect(() =>
+      this.updatedEntry.set({
+        id: this.entry().id,
+        parent: this.entry().parent,
+        nesting: this.entry().nesting,
+        text: this.entry().text,
+        showTodo: this.entry().showTodo,
+        isDone: this.entry().isDone,
+      }),
+    );
   }
 
   focusEntry() {
     const textBox = document.getElementById(this.entry().id.toString());
     textBox?.focus();
     this.commandService.executeCommand$.next(Command.SWITCH_TO_INSERT_MODE);
-    this.entryService.activateEntryById(this.entry().id);
+    // this.entryService.activateEntryById(this.entry().id);
   }
 
   // figure out how to get an onBecomesActive event and
@@ -321,15 +275,17 @@ export class OutlinerEntryComponent {
 
   onTodoToggled() {
     console.log(`Toggle todo for entry: ${this.entry().id}`);
-    this.updatedEntry.update((entry) => ({ ...entry, showTodo: !entry.showTodo }));
+    this.updatedEntry.update((entry) => ({
+      ...entry,
+      showTodo: !entry.showTodo,
+    }));
     this.entryService.edit$.next(this.updatedEntry());
   }
 
   onDeleteEntry() {
     console.log(`Deleting entry: ${this.entry().id}`);
-    this.entryService.remove$.next({ id: this.entry().id, withChildren: true });
+    this.entryService.remove$.next({ id: this.entry().id });
   }
-
 
   // calculateIsMultiLine() {
   //   const textBox = document.getElementById(this.entry().id.toString());

@@ -1,4 +1,4 @@
-use crate::models::{Entry, EntryAndTags, NextDataResponse, ResultEntry};
+use crate::models::{Block, Entry, NextDataResponse, ResultBlock, ResultEntry};
 use anyhow::Result;
 use chrono::NaiveDateTime;
 use sqlx::sqlite::{SqlitePool, SqlitePoolOptions};
@@ -16,27 +16,123 @@ impl Database {
     }
 }
 
+pub async fn insert_new_block(db: &Database, block: Block) -> Result<Block> {
+    update_end_timestamps_of_unclosed_blocks(db, &block).await?;
+    let new_block_id = insert_block(db, block).await?;
+    Ok(select_block(db, new_block_id).await?)
+}
+
+async fn update_end_timestamps_of_unclosed_blocks(db: &Database, block: &Block) -> Result<()> {
+    sqlx::query(
+        "
+    UPDATE blocks
+    SET end = DATETIME(?1)
+    WHERE end IS NULL;
+       ",
+    )
+    .bind(block.start)
+    .execute(&db.pool)
+    .await?;
+
+    Ok(())
+}
+
+async fn insert_block(db: &Database, block: Block) -> Result<i64> {
+    let new_block_id = sqlx::query_as::<_, ResultBlock>(
+        "
+        INSERT INTO blocks (
+            text,
+            project,
+            start,
+            end,
+            duration,
+        ) VALUES (
+            ?1,
+            ?2,
+            ?3,
+            ?4,
+            ?5,
+        ) RETURNING block_id;
+            ",
+    )
+    .bind(block.text)
+    .bind(block.project)
+    .bind(block.start)
+    .bind(block.end)
+    .bind(block.duration)
+    .fetch_one(&db.pool)
+    .await?;
+    Ok(new_block_id.block_id)
+}
+
+pub async fn select_block(db: &Database, block_id: i64) -> Result<Block> {
+    Ok(sqlx::query_as::<_, Block>(
+        "
+    SELECT
+        blocks.block_id,
+       	blocks.text,
+       	blocks.project,
+       	projects.name AS project_name,
+       	blocks.start,
+       	blocks.end,
+       	blocks.duration,
+    FROM blocks
+
+    LEFT OUTER JOIN projects ON blocks.project = projects.project_id
+    LEFT JOIN tagged_blocks ON blocks.block_id = tagged_blocks.block_fk
+    WHERE blocks.block_id = ?1;
+        ",
+    )
+    .bind(block_id)
+    .fetch_one(&db.pool)
+    .await?)
+}
+
+pub async fn select_blocks(db: &Database, start: NaiveDateTime, end: NaiveDateTime) -> Vec<Block> {
+    sqlx::query_as::<_, Block>(
+        "
+    SELECT
+    	blocks.block_id,
+    	blocks.text,
+    	blocks.project,
+    	projects.name AS project_name,
+    	blocks.start,
+    	blocks.end,
+    	blocks.duration,
+    	COALESCE(GROUP_CONCAT(DISTINCT tags.name), '') AS tags
+    FROM blocks
+
+    LEFT OUTER JOIN projects ON blocks.project = projects.project_id
+    LEFT JOIN tagged_blocks ON blocks.block_id = tagged_blocks.block_fk
+    LEFT JOIN tags ON tagged_blocks.tag_fk = tags.tag_id
+
+    WHERE blocks.start > DATETIME(?1) AND blocks.start < DATETIME(?2)
+    GROUP BY blocks.block_id
+    ORDER BY blocks.start;
+        ",
+    )
+    .bind(start)
+    .bind(end)
+    .fetch_all(&db.pool)
+    .await
+    .unwrap()
+}
+
 pub async fn insert_new_entry(db: &Database, entry: Entry) -> Result<Entry> {
-    update_end_timestamps_of_unclosed_entries(db, &entry).await?;
     let new_entry_id = insert_entry(db, &entry).await?;
     Ok(select_entry(db, new_entry_id).await?)
 }
 
 pub async fn select_entry(db: &Database, entry_id: i64) -> Result<Entry> {
-    println!("Selecting entry: {:?}", entry_id);
     Ok(sqlx::query_as::<_, Entry>(
         "
-    SELECT 
-        entry_id, 
-        parent, 
-        path, 
-        nesting, 
-        start_timestamp, 
-        end_timestamp, 
-        text, 
-        show_todo, 
-        is_done, 
-        estimated_duration 
+    SELECT
+        entry_id,
+        parent,
+        nesting,
+        text,
+        show_todo,
+        is_done,
     FROM entries
     WHERE entries.entry_id = ?1;
             ",
@@ -46,29 +142,32 @@ pub async fn select_entry(db: &Database, entry_id: i64) -> Result<Entry> {
     .await?)
 }
 
-pub async fn select_entries(
-    db: &Database,
-    start: NaiveDateTime,
-    end: NaiveDateTime,
-) -> Vec<EntryAndTags> {
-    sqlx::query_as::<_, EntryAndTags>(
+pub async fn select_entries(db: &Database, start: NaiveDateTime, end: NaiveDateTime) -> Vec<Entry> {
+    sqlx::query_as::<_, Entry>(
         "
-    SELECT 
-        entries.entry_id, 
-        entries.parent, 
-        entries.path, 
-        entries.nesting, 
-        entries.start_timestamp, 
-        entries.end_timestamp, 
-        entries.text, 
-        entries.show_todo, 
-        entries.is_done, 
-        entries.estimated_duration , 
-        COALESCE(GROUP_CONCAT(tags.name, ', '), '') AS tags FROM entries
-    FULL OUTER JOIN tagged_entries ON entries.entry_id = tagged_entries.entry_fk
-    FULL OUTER JOIN tags ON tagged_entries.tag_fk  = tags.tag_id
-    WHERE entries.start_timestamp > DATETIME(?1) AND entries.start_timestamp < DATETIME(?2)
-    GROUP BY entries.entry_id;
+        WITH entries_for_range AS (
+            SELECT
+                blocks.block_id as parent,
+                entries.entry_id,
+                entries.nesting,
+                entries.text,
+                entries.show_todo,
+                entries.is_done
+            FROM blocks
+
+            LEFT JOIN entries ON entries.parent = blocks.block_id
+
+            WHERE blocks.start > DATETIME(?1) AND blocks.start < DATETIME(?2)
+
+            GROUP BY
+                blocks.block_id,
+                entries.entry_id
+            ORDER BY
+                blocks.block_id,
+                entries.entry_id
+	    )
+		SELECT * FROM entries_for_range
+		WHERE entries_for_range.entry_id IS NOT NULL;
             ",
     )
     .bind(start)
@@ -81,29 +180,21 @@ pub async fn select_entries(
 pub async fn update_entry(db: &Database, entry: Entry) -> Result<Entry> {
     sqlx::query(
         "
-    UPDATE entries SET 
-        parent=?2, 
-        path=?3, 
-        nesting=?4, 
-        start_timestamp=DATETIME(?5), 
-        end_timestamp=DATETIME(?6), 
-        text=?7, 
-        show_todo=?8, 
-        is_done=?9, 
-        estimated_duration=?10
+    UPDATE entries SET
+        parent=?2,
+        nesting=?3,
+        text=?4,
+        show_todo=?5,
+        is_done=?6,
     WHERE entry_id=?1;
         ",
     )
     .bind(entry.entry_id)
     .bind(entry.parent)
-    .bind(entry.path)
     .bind(entry.nesting)
-    .bind(entry.start_timestamp)
-    .bind(entry.end_timestamp)
     .bind(entry.text)
     .bind(entry.show_todo)
     .bind(entry.is_done)
-    .bind(entry.estimated_duration)
     .execute(&db.pool)
     .await?;
 
@@ -135,56 +226,29 @@ pub async fn delete_entry(db: &Database, entry_id: i64, with_children: bool) -> 
     .is_ok()
 }
 
-// Should probably add a maximum amount of time between the start and end timestamp?
-// How would I handle this time being breached?
-async fn update_end_timestamps_of_unclosed_entries(db: &Database, entry: &Entry) -> Result<()> {
-    sqlx::query(
-        "
-    UPDATE entries
-    SET end_timestamp = DATETIME(?1)
-    WHERE nesting >= ?2 AND end_timestamp IS NULL;
-       ",
-    )
-    .bind(entry.start_timestamp)
-    .bind(entry.nesting)
-    .execute(&db.pool)
-    .await?;
-
-    Ok(())
-}
-
 async fn insert_entry(db: &Database, entry: &Entry) -> Result<i64> {
     let new_entry_id = sqlx::query_as::<_, ResultEntry>(
         "
     INSERT INTO entries (
-        parent, 
-        path, 
-        nesting, 
-        start_timestamp, 
-        text, 
-        show_todo, 
-        is_done, 
-        estimated_duration 
+        parent,
+        nesting,
+        text,
+        show_todo,
+        is_done,
     ) VALUES (
         ?1,
         ?2,
         ?3,
-        DATETIME(?4),
+        ?4,
         ?5,
-        ?6,
-        ?7,
-        ?8
     ) RETURNING entry_id;
         ",
     )
     .bind(entry.parent)
-    .bind(&entry.path)
     .bind(entry.nesting)
-    .bind(entry.start_timestamp)
     .bind(&entry.text)
     .bind(entry.show_todo)
     .bind(entry.is_done)
-    .bind(entry.estimated_duration)
     .fetch_one(&db.pool)
     .await?;
     Ok(new_entry_id.entry_id)
@@ -196,9 +260,9 @@ pub async fn select_earlier_timestamp(
 ) -> Result<NextDataResponse> {
     let next_data = sqlx::query_as::<_, NextDataResponse>(
         "
-    SELECT start_timestamp AS entry_timestamp FROM entries 
-    WHERE start_timestamp < DATETIME(?1)
-    ORDER BY entry_timestamp DESC LIMIT 1;
+    SELECT start AS block_timestamp FROM blocks
+    WHERE start < DATETIME(?1)
+    ORDER BY block_timestamp DESC LIMIT 1;
         ",
     )
     .bind(timestamp)
@@ -206,23 +270,3 @@ pub async fn select_earlier_timestamp(
     .await?;
     Ok(next_data)
 }
-
-//async fn get_parent_path_and_nesting(db: &Database, entry: &Entry) -> Result<(String, i64)> {
-//    let (parent_path, parent_id) = if entry.parent.is_some() {
-//        sqlx::query_as::<_, (String, i64)>(
-//            "
-//SELECT entries.path, entries.nesting FROM entries
-//WHERE entries.entry_id = ?3;
-//       ",
-//        )
-//        .bind(entry.end_timestamp)
-//        .bind(entry.nesting)
-//        .bind(entry.parent)
-//        .fetch_one(&db.pool)
-//        .await?
-//    } else {
-//        (String::from("/"), 0)
-//    };
-//
-//    Ok((parent_path, parent_id))
-//}

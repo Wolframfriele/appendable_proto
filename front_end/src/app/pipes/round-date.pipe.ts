@@ -1,11 +1,11 @@
-import { Pipe, PipeTransform } from '@angular/core';
+import { Pipe, PipeTransform } from "@angular/core";
 
 @Pipe({
-  name: 'roundDate'
+  standalone: true,
+  name: "roundDate",
 })
 export class RoundDatePipe implements PipeTransform {
-
   transform(value: Date): string {
-    return value.toISOString().split('T')[0];
+    return value.toISOString().split("T")[0];
   }
 }

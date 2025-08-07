@@ -1,13 +1,19 @@
-import { Component, inject } from '@angular/core';
-import { ControlMode, KeyboardService } from '../../data/keyboard.service';
+import { Component, inject } from "@angular/core";
+import { ControlMode, KeyboardService } from "../../data/keyboard.service";
 
 @Component({
-  selector: 'app-command-pallete',
+  standalone: true,
+  selector: "app-command-pallete",
   imports: [],
   template: `
     @if (isCommandModeActive) {
       <div class="command-pallete-container">
-        <input id="command-input" type="text" placeholder="enter commands" autofocus>
+        <input
+          id="command-input"
+          type="text"
+          placeholder="enter commands"
+          autofocus
+        />
       </div>
     }
   `,
@@ -23,12 +29,14 @@ import { ControlMode, KeyboardService } from '../../data/keyboard.service';
       width: 25rem;
       height: 2rem;
     }
-  `
+  `,
 })
 export class CommandPalleteComponent {
   keyboardService = inject(KeyboardService);
 
   get isCommandModeActive() {
-    return this.keyboardService.activeControlMode() === ControlMode.COMMAND_MODE;
+    return (
+      this.keyboardService.activeControlMode() === ControlMode.COMMAND_MODE
+    );
   }
 }
