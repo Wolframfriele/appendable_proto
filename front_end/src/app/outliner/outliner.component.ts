@@ -1,14 +1,11 @@
 import { Component, inject } from "@angular/core";
 import { DateRangeService } from "./data/date-range.service";
-import { EntryService } from "./data/entry.service";
-import { ViewComponent } from "./ui/view/view.component";
 import { HeaderComponent } from "../shared/ui/header/header.component";
 import { DisplayDatePipe } from "../pipes/display-date.pipe";
 import { StatusBarComponent } from "./ui/status-bar/status-bar.component";
 import { CommandPalleteComponent } from "../shared/ui/command-pallete/command-pallete.component";
 import { BlockService } from "./data/block.service";
 import { OutlinerBlockComponent } from "./ui/outliner-block/outliner-block.component";
-import { RoundDatePipe } from "../pipes/round-date.pipe";
 
 @Component({
   selector: "app-outliner",
@@ -18,7 +15,6 @@ import { RoundDatePipe } from "../pipes/round-date.pipe";
     StatusBarComponent,
     OutlinerBlockComponent,
     DisplayDatePipe,
-    RoundDatePipe,
     CommandPalleteComponent,
   ],
   template: `
@@ -32,7 +28,7 @@ import { RoundDatePipe } from "../pipes/round-date.pipe";
           <h1>{{ block.start | displayDate }}</h1>
         }
 
-        <app-outliner-block [block]="block" />
+        <app-outliner-block [block]="block" [active]="isActive(idx)" />
       }
 
       @if (!blockService.loaded()) {
@@ -60,20 +56,14 @@ export default class OutlinerComponent {
   dateRangeService = inject(DateRangeService);
   blockService = inject(BlockService);
 
-  roundDate = new RoundDatePipe();
-
   get getBlocks() {
     return this.blockService.blocks();
   }
 
   isPreviousBlockDifferentDate(idx: number) {
     if (idx > 0) {
-      const currentBlockDate = this.roundDate.transform(
-        this.getBlocks[idx].start,
-      );
-      const previousBlockDate = this.roundDate.transform(
-        this.getBlocks[idx - 1].start,
-      );
+      const currentBlockDate = this.roundDate(this.getBlocks[idx].start);
+      const previousBlockDate = this.roundDate(this.getBlocks[idx - 1].start);
       return currentBlockDate !== previousBlockDate;
     }
     return true;
@@ -81,5 +71,16 @@ export default class OutlinerComponent {
 
   convertToDate(dateStr: string): Date {
     return new Date(dateStr);
+  }
+
+  isActive(idx: number): boolean {
+    if (idx === this.blockService.activeIdx()) {
+      return true;
+    }
+    return false;
+  }
+
+  private roundDate(value: Date): string {
+    return value.toISOString().split("T")[0];
   }
 }

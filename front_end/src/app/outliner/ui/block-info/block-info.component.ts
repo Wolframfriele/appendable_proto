@@ -1,20 +1,26 @@
 import { Component, input } from "@angular/core";
-import { DisplayTimePipe } from "../../../pipes/display-time.pipe";
 import { DisplayTagsComponent } from "../display-tags/display-tags.component";
 import { DurationVsEstimateComponent } from "../../../shared/ui/duration-vs-estimate/duration-vs-estimate.component";
 
 @Component({
   standalone: true,
   selector: "app-block-info",
-  imports: [DisplayTimePipe, DurationVsEstimateComponent, DisplayTagsComponent],
+  imports: [DurationVsEstimateComponent, DisplayTagsComponent],
   template: `
-    <div class="entry-info">
+    <div class="block-info">
       <p class="block-title">
-        {{ text() }}
         @if (projectName()) {
           <a routerLink="/projects/" class="project-link">{{
             projectName()
           }}</a>
+        } @else {
+          <input
+            type="text"
+            placeholder="@project"
+            id=""
+            class="project-selector"
+          />
+          <!-- <span class=""> &#64; project </span> -->
         }
       </p>
       <app-duration-vs-estimate
@@ -27,7 +33,7 @@ import { DurationVsEstimateComponent } from "../../../shared/ui/duration-vs-esti
     </div>
   `,
   styles: `
-    .entry-info {
+    .block-info {
       width: 100%;
       margin: 0.5rem 0 0.2rem 0;
       display: flex;
@@ -46,12 +52,26 @@ import { DurationVsEstimateComponent } from "../../../shared/ui/duration-vs-esti
       .block-title {
         margin: 0.3rem;
       }
+
+      .project-selector {
+        background: var(--background);
+        border: none;
+        color: var(--text-color);
+      }
+
+      .project-selector::placeholder {
+        color: var(--secondary-text);
+      }
+
+      .project-selector:focus {
+        outline: none;
+      }
     }
   `,
 })
 export class BlockInfoComponent {
-  text = input<string>("");
   projectName = input<string | undefined>(undefined);
+  projectId = input<number | undefined>(undefined);
   duration = input<number>(0);
   estimate = input<number | undefined>(undefined);
   tags = input<string[]>([]);

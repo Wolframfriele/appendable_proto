@@ -64,8 +64,17 @@ export class BlockService {
       }),
     );
 
+    const blockRemoved$ = this.remove$.pipe(
+      concatMap((removeBlock) => {
+        console.log(`Deleted block: ${removeBlock}`);
+        return this.http
+          .delete(`/api/blocks/${removeBlock.id}`)
+          .pipe(catchError((err) => this.handleError(err)));
+      }),
+    );
+
     // reducers
-    merge(blockAdded$, this.dateRangeService.dateRangeExpanded$)
+    merge(blockAdded$, blockRemoved$, this.dateRangeService.dateRangeExpanded$)
       .pipe(
         startWith(null),
         switchMap(() =>
@@ -91,8 +100,30 @@ export class BlockService {
         case Command.ADD_NEW_BLOCK:
           this.addNewBlock();
           break;
+        case Command.MOVE_TO_PREVIOUS_BLOCK:
+          this.moveToPreviousBlock();
+          break;
+        case Command.MOVE_TO_NEXT_BLOCK:
+          this.moveToNextBlock();
+          break;
+        case Command.DELETE_ACTIVE_BLOCK:
+          this.deleteActiveBlock();
+          break;
       }
     });
+  }
+
+  public setActive(idx: number) {
+    if (idx >= 0 && idx <= this.state().blocks.length) {
+      this.state.update((state) => ({
+        ...state,
+        activeIdx: idx,
+      }));
+    }
+  }
+
+  public get activeId(): number {
+    return this.blocks()[this.activeIdx()].id;
   }
 
   private handleError(err: any) {
@@ -111,5 +142,28 @@ export class BlockService {
       duration: 0,
       tags: [],
     });
+    this.setActive(0);
+  }
+
+  private moveToPreviousBlock() {
+    if (this.state().activeIdx > 0) {
+      this.state.update((state) => ({
+        ...state,
+        activeIdx: state.activeIdx - 1,
+      }));
+    }
+  }
+
+  private moveToNextBlock() {
+    if (this.state().activeIdx < this.state().blocks.length - 1) {
+      this.state.update((state) => ({
+        ...state,
+        activeIdx: state.activeIdx + 1,
+      }));
+    }
+  }
+
+  private deleteActiveBlock() {
+    this.remove$.next({ id: this.activeId });
   }
 }

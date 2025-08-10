@@ -2,7 +2,7 @@ use axum::{
     extract::{Path, Query, State},
     http::StatusCode,
     response::{IntoResponse, Response},
-    routing::{get, put},
+    routing::{delete, get, put},
     Json, Router,
 };
 
@@ -12,7 +12,7 @@ use serde::Deserialize;
 use std::sync::Arc;
 
 use track_proto::{
-    database::{insert_new_block, select_blocks, select_entries},
+    database::{delete_blocks, insert_new_block, select_blocks, select_entries},
     models::{Block, Entry, NextDataResponse},
 };
 
@@ -28,6 +28,7 @@ async fn main() {
 
     let app = Router::new()
         .route("/api/blocks", get(get_blocks).post(post_block))
+        .route("/api/blocks/{block_id}", delete(delete_block_api))
         .route("/api/entries", get(get_entries).post(post_entry))
         .route(
             "/api/entries/{entry_id}",
@@ -66,6 +67,18 @@ async fn get_blocks(
         )
         .await,
     ))
+}
+
+async fn delete_block_api(
+    Path(block_id): Path<i64>,
+    db: State<Arc<Database>>,
+) -> impl IntoResponse {
+    println!("Delete block: {}", block_id);
+    if delete_blocks(&db, block_id).await {
+        (StatusCode::NO_CONTENT, "Block deleted")
+    } else {
+        (StatusCode::CONFLICT, "The block could not be deleted")
+    }
 }
 
 async fn post_block(

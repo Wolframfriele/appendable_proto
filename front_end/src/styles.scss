@@ -1,6 +1,8 @@
 /* You can add global styles to this file, and also import other style files */
 :root {
-  --background: #161616ff;
+  --darkest: black;
+  --background: #161616;
+  --background-deep: #121212;
   --darker-black: #0f0f0f;
   --lighter-black: #2e2e2e;
   --title-color: white;
@@ -28,7 +30,9 @@
 
 @media (prefers-color-scheme: light) {
   :root {
-    --background: #f6f2eecc;
+    --darkest: #cfcfcf;
+    --background: #f6f6f6;
+    --background-deep: #fff;
     --darker-black: #a1a1a1;
     --lighter-black: #cfcfcf;
     --title-color: #0f0f0f;

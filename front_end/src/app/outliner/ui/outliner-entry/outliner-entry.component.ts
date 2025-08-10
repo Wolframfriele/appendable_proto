@@ -12,7 +12,6 @@ import { CheckboxComponent } from "../checkbox/checkbox.component";
 import { FormsModule } from "@angular/forms";
 import { ContenteditableDirective } from "../../../model/contenteditable.model";
 import { Entry } from "../../../model/entry.model";
-import { DurationVsEstimateComponent } from "../../../shared/ui/duration-vs-estimate/duration-vs-estimate.component";
 import { EntryService } from "../../data/entry.service";
 import { RoundDatePipe } from "../../../pipes/round-date.pipe";
 import { KeyboardService } from "../../../shared/data/keyboard.service";
@@ -21,12 +20,7 @@ import { Command, CommandService } from "../../../shared/data/command.service";
 @Component({
   selector: "app-outliner-entry",
   standalone: true,
-  imports: [
-    CheckboxComponent,
-    DurationVsEstimateComponent,
-    FormsModule,
-    ContenteditableDirective,
-  ],
+  imports: [CheckboxComponent, FormsModule, ContenteditableDirective],
   template: `
     <li>
       <div class="text-elements-container" (click)="focusEntry()">
@@ -286,19 +280,4 @@ export class OutlinerEntryComponent {
     console.log(`Deleting entry: ${this.entry().id}`);
     this.entryService.remove$.next({ id: this.entry().id });
   }
-
-  // calculateIsMultiLine() {
-  //   const textBox = document.getElementById(this.entry().id.toString());
-  //   if (textBox !== undefined && textBox !== null) {
-  //     const textBoxHeight: number = +textBox.offsetHeight;
-  //     if (textBoxHeight > 50) {
-  //       return true;
-  //     }
-  //   }
-  //   return false;
-  // }
-
-  // ngAfterViewInit(): void {
-  //   this.isMultiLine.set(this.calculateIsMultiLine());
-  // }
 }

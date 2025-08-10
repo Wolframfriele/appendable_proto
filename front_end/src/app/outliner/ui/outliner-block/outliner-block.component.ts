@@ -1,4 +1,4 @@
-import { Component, effect, inject, Inject, input, model } from "@angular/core";
+import { Component, effect, inject, input, model } from "@angular/core";
 import { Block } from "../../../model/block.model";
 import { BlockInfoComponent } from "../block-info/block-info.component";
 import { RouterLink } from "@angular/router";
@@ -16,7 +16,7 @@ import { DisplayTimePipe } from "../../../pipes/display-time.pipe";
     DisplayTimePipe,
   ],
   template: `
-    <div class="block-container">
+    <div class="block-container" [class.active]="active()">
       <div class="block-elements-container">
         <span class="line" [class.hidden]="hasNoEntries"></span>
         <span class="dot"></span>
@@ -46,6 +46,9 @@ import { DisplayTimePipe } from "../../../pipes/display-time.pipe";
     .block-container {
       width: 50rem;
       margin-bottom: 1rem;
+      background: var(--background-deep);
+      border-radius: 5px;
+      padding: 0.5rem;
     }
 
     .block-text {
@@ -94,10 +97,15 @@ import { DisplayTimePipe } from "../../../pipes/display-time.pipe";
       list-style: none;
       padding: 0;
     }
+
+    .active {
+      border-left: 5px solid var(--active-color);
+    }
   `,
 })
 export class OutlinerBlockComponent {
   block = input.required<Block>();
+  active = input<boolean>(false);
 
   entryService = inject(EntryService);
 

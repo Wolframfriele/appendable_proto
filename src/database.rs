@@ -24,10 +24,13 @@ pub async fn insert_new_block(db: &Database, block: Block) -> Result<Block> {
 
 async fn update_end_timestamps_of_unclosed_blocks(db: &Database, block: &Block) -> Result<()> {
     println!("updating time of old entries");
+    // First
     sqlx::query(
         "
     UPDATE blocks
-    SET end = DATETIME(?1)
+    SET
+        end = DATETIME(?1),
+        duration = STRFTIME('%s', DATETIME(?1)) - STRFTIME('%s', blocks.start)
     WHERE end IS NULL;
        ",
     )
@@ -51,15 +54,13 @@ async fn insert_block(db: &Database, block: Block) -> Result<i64> {
             ?1,
             ?2,
             DATETIME(?3),
-            ?4
+            0
         ) RETURNING block_id;
             ",
     )
     .bind(block.text)
     .bind(block.project)
     .bind(block.start)
-    .bind(block.end)
-    .bind(block.duration)
     .fetch_one(&db.pool)
     .await?;
     Ok(new_block_id.block_id)
@@ -120,6 +121,18 @@ pub async fn select_blocks(db: &Database, start: NaiveDateTime, end: NaiveDateTi
     .fetch_all(&db.pool)
     .await
     .unwrap()
+}
+
+pub async fn delete_blocks(db: &Database, block_id: i64) -> bool {
+    sqlx::query(
+        "
+    DELETE FROM blocks WHERE block_id = ?1;
+        ",
+    )
+    .bind(block_id)
+    .execute(&db.pool)
+    .await
+    .is_ok()
 }
 
 pub async fn insert_new_entry(db: &Database, entry: Entry) -> Result<Entry> {

@@ -8,6 +8,9 @@ export enum Command {
   SWITCH_TO_COMMAND_MODE = "keyboard: switch to command mode",
 
   ADD_NEW_BLOCK = "outliner: add new block",
+  MOVE_TO_PREVIOUS_BLOCK = "outliner: move to previous block",
+  MOVE_TO_NEXT_BLOCK = "outliner: move to next block",
+  DELETE_ACTIVE_BLOCK = "outliner: delete active block",
 
   ADD_NEW_ENTRY = "outliner: add new entry",
   ADD_NEW_CHILD_ENTRY = "outliner: add new child entry",
