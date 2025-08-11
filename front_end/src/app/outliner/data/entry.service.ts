@@ -13,11 +13,7 @@ import {
 import { HttpClient, HttpHeaders } from "@angular/common/http";
 import { takeUntilDestroyed } from "@angular/core/rxjs-interop";
 import { Entry, RemoveEntry } from "../../model/entry.model";
-import {
-  mapToEntries,
-  mapToEntry,
-  mapToJsonEntry,
-} from "../../model/entry.mapper";
+import { mapToEntries, mapToJsonEntry } from "../../model/entry.mapper";
 import { EntryJson } from "../../model/entry.interface";
 import { Command, CommandService } from "../../shared/data/command.service";
 

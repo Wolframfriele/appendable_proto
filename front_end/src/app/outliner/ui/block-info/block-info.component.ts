@@ -1,6 +1,7 @@
-import { Component, input } from "@angular/core";
+import { Component, effect, inject, input } from "@angular/core";
 import { DisplayTagsComponent } from "../display-tags/display-tags.component";
 import { DurationVsEstimateComponent } from "../../../shared/ui/duration-vs-estimate/duration-vs-estimate.component";
+import { ProjectService } from "../../data/project.service";
 
 @Component({
   standalone: true,
@@ -20,7 +21,6 @@ import { DurationVsEstimateComponent } from "../../../shared/ui/duration-vs-esti
             id=""
             class="project-selector"
           />
-          <!-- <span class=""> &#64; project </span> -->
         }
       </p>
       <app-duration-vs-estimate
@@ -56,7 +56,9 @@ import { DurationVsEstimateComponent } from "../../../shared/ui/duration-vs-esti
       .project-selector {
         background: var(--background);
         border: none;
-        color: var(--text-color);
+        color: var(--deep-cyan);
+        font-size: 1.25rem;
+        width: 12rem;
       }
 
       .project-selector::placeholder {
@@ -75,4 +77,6 @@ export class BlockInfoComponent {
   duration = input<number>(0);
   estimate = input<number | undefined>(undefined);
   tags = input<string[]>([]);
+
+  projectService = inject(ProjectService);
 }

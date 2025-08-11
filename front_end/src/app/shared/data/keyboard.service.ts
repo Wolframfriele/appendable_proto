@@ -36,7 +36,7 @@ export class KeyboardService {
     this.commandService.executeCommand$.subscribe((command) => {
       switch (command) {
         case Command.SWITCH_TO_NORMAL_MODE:
-          (document.activeElement as HTMLElement).blur();
+          (document.activeElement as HTMLElement).blur(); // remove focus
           this.state.set({ activeControlMode: ControlMode.NORMAL_MODE });
           break;
         case Command.SWITCH_TO_INSERT_MODE:
