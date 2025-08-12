@@ -28,4 +28,17 @@ export class CommandService {
   // Also has an output stream of executed commands with arguments
 
   constructor() {}
+
+  public get possibleCommands(): string[] {
+    return Object.values(Command);
+  }
+
+  public executeCommandFromValue(commandValue: string) {
+    const command = Object.values(Command).find(
+      (value) => value == commandValue,
+    ) as Command | undefined;
+    if (command) {
+      this.executeCommand$.next(command);
+    }
+  }
 }

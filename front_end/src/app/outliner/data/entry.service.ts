@@ -173,8 +173,6 @@ export class EntryService {
       }
       grouped.get(entry.parent)!.push(entry);
     }
-    console.log(grouped);
-
     return grouped;
   }
 
