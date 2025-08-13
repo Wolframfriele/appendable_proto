@@ -3,9 +3,11 @@ import { DateRangeService } from "./data/date-range.service";
 import { HeaderComponent } from "../shared/ui/header/header.component";
 import { DisplayDatePipe } from "../pipes/display-date.pipe";
 import { StatusBarComponent } from "./ui/status-bar/status-bar.component";
-import { CommandPalleteComponent } from "../shared/ui/command-pallete/command-pallete.component";
 import { BlockService } from "./data/block.service";
 import { OutlinerBlockComponent } from "./ui/outliner-block/outliner-block.component";
+import { ControlMode, KeyboardService } from "../shared/data/keyboard.service";
+import { Command, CommandService } from "../shared/data/command.service";
+import { FuzzySearchFieldComponent } from "../shared/ui/fuzzy-search-field/fuzzy-search-field.component";
 
 @Component({
   selector: "app-outliner",
@@ -15,12 +17,19 @@ import { OutlinerBlockComponent } from "./ui/outliner-block/outliner-block.compo
     StatusBarComponent,
     OutlinerBlockComponent,
     DisplayDatePipe,
-    CommandPalleteComponent,
+    FuzzySearchFieldComponent,
   ],
   template: `
     <app-header />
 
-    <app-command-pallete />
+    @if (isCommandModeActive) {
+      <app-fuzzy-search-field
+        [searchableOptions]="commandService.possibleCommands"
+        [setFocus]="isCommandModeActive"
+        placeholder="enter commands"
+        (selected)="executeCommand($event)"
+      />
+    }
 
     <div class="blocks-container">
       @for (block of getBlocks; track idx; let idx = $index) {
@@ -50,11 +59,21 @@ import { OutlinerBlockComponent } from "./ui/outliner-block/outliner-block.compo
       flex-direction: column;
       align-items: center;
     }
+
+    app-fuzzy-search-field {
+      position: absolute;
+      top: 40%;
+      left: 50%;
+      transform: translate(-50%, 0);
+      --search-box-width: 30rem;
+    }
   `,
 })
 export default class OutlinerComponent {
   dateRangeService = inject(DateRangeService);
   blockService = inject(BlockService);
+  keyboardService = inject(KeyboardService);
+  commandService = inject(CommandService);
 
   get getBlocks() {
     return this.blockService.blocks();
@@ -69,10 +88,6 @@ export default class OutlinerComponent {
     return true;
   }
 
-  convertToDate(dateStr: string): Date {
-    return new Date(dateStr);
-  }
-
   isActive(idx: number): boolean {
     if (idx === this.blockService.activeIdx()) {
       return true;
@@ -82,5 +97,16 @@ export default class OutlinerComponent {
 
   private roundDate(value: Date): string {
     return value.toISOString().split("T")[0];
+  }
+
+  get isCommandModeActive() {
+    return (
+      this.keyboardService.activeControlMode() === ControlMode.COMMAND_MODE
+    );
+  }
+
+  executeCommand(commandValue: string) {
+    this.commandService.executeCommand$.next(Command.SWITCH_TO_NORMAL_MODE);
+    this.commandService.executeCommandFromValue(commandValue);
   }
 }

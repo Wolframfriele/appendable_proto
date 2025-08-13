@@ -53,6 +53,14 @@ pub struct Entry {
 }
 
 #[derive(FromRow, Serialize, Deserialize, Debug)]
+pub struct Project {
+    pub project_id: i64,
+    pub name: String,
+    pub archived: bool,
+    pub color: String,
+}
+
+#[derive(FromRow, Serialize, Deserialize, Debug)]
 pub struct Tag {
     pub tag_id: i64,
     pub name: String,

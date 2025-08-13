@@ -15,40 +15,41 @@ import { DisplayTimePipe } from "../../../pipes/display-time.pipe";
     RouterLink,
     DisplayTimePipe,
   ],
+  host: {
+    "[class.active]": "active()",
+  },
   template: `
-    <div class="block-container" [class.active]="active()">
-      <div class="block-elements-container">
-        <span class="line" [class.hidden]="hasNoEntries"></span>
-        <span class="dot"></span>
-        <div class="block-text">
-          <app-block-info
-            [projectName]="updatedBlock().projectName"
-            [duration]="updatedBlock().duration"
-            [tags]="updatedBlock().tags"
-          />
-          @if (findEntriesForBlock() !== undefined) {
-            <ul class="entries-list">
-              @for (
-                entry of findEntriesForBlock();
-                track idx;
-                let idx = $index
-              ) {
-                <app-outliner-entry [entry]="entry" [idx]="idx" />
-              }
-            </ul>
-          }
-        </div>
+    <div class="block-elements-container">
+      <span class="line" [class.hidden]="hasNoEntries"></span>
+      <span class="dot"></span>
+      <div class="block-text">
+        <app-block-info
+          [projectName]="updatedBlock().projectName"
+          [duration]="updatedBlock().duration"
+          [tags]="updatedBlock().tags"
+        />
+        @if (findEntriesForBlock() !== undefined) {
+          <ul class="entries-list">
+            @for (entry of findEntriesForBlock(); track idx; let idx = $index) {
+              <app-outliner-entry [entry]="entry" [idx]="idx" />
+            }
+          </ul>
+        }
       </div>
-      <time>{{ block().start | displayTime }}</time>
     </div>
+    <time>{{ block().start | displayTime }}</time>
   `,
   styles: `
-    .block-container {
+    :host {
       width: 50rem;
       margin-bottom: 1rem;
       background: var(--background-deep);
       border-radius: 5px;
       padding: 0.5rem;
+    }
+
+    :host(.active) {
+      border-left: 5px solid var(--active-color);
     }
 
     .block-text {
@@ -96,10 +97,6 @@ import { DisplayTimePipe } from "../../../pipes/display-time.pipe";
     ul {
       list-style: none;
       padding: 0;
-    }
-
-    .active {
-      border-left: 5px solid var(--active-color);
     }
   `,
 })

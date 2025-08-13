@@ -12,8 +12,8 @@ use serde::Deserialize;
 use std::sync::Arc;
 
 use track_proto::{
-    database::{delete_blocks, insert_new_block, select_blocks, select_entries},
-    models::{Block, Entry, NextDataResponse},
+    database::{delete_blocks, insert_new_block, select_blocks, select_entries, select_projects},
+    models::{Block, Entry, NextDataResponse, Project},
 };
 
 use track_proto::database::{
@@ -34,6 +34,7 @@ async fn main() {
             "/api/entries/{entry_id}",
             put(put_entry).delete(delete_entry_api),
         )
+        .route("/api/projects", get(get_projects))
         .route(
             "/api/earlier_blocks/{last_data}",
             get(get_first_block_timestamp_before),
@@ -157,6 +158,12 @@ async fn get_first_block_timestamp_before(
         select_earlier_timestamp(&db, &last_data.naive_utc()).await?,
     ))
 }
+
+async fn get_projects(db: State<Arc<Database>>) -> Result<Json<Vec<Project>>, BadRequestError> {
+    println!("Get projects");
+    Ok(Json(select_projects(&db).await?))
+}
+
 // Error handling
 struct NotFoundError(Error);
 

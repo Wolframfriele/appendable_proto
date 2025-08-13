@@ -2,42 +2,44 @@ import { Component, effect, inject, input } from "@angular/core";
 import { DisplayTagsComponent } from "../display-tags/display-tags.component";
 import { DurationVsEstimateComponent } from "../../../shared/ui/duration-vs-estimate/duration-vs-estimate.component";
 import { ProjectService } from "../../data/project.service";
+import { FuzzySearchFieldComponent } from "../../../shared/ui/fuzzy-search-field/fuzzy-search-field.component";
 
 @Component({
   standalone: true,
   selector: "app-block-info",
-  imports: [DurationVsEstimateComponent, DisplayTagsComponent],
+  imports: [
+    FuzzySearchFieldComponent,
+    DurationVsEstimateComponent,
+    DisplayTagsComponent,
+  ],
   template: `
-    <div class="block-info">
-      <p class="block-title">
-        @if (projectName()) {
-          <a routerLink="/projects/" class="project-link">{{
-            projectName()
-          }}</a>
-        } @else {
-          <input
-            type="text"
-            placeholder="@project"
-            id=""
-            class="project-selector"
-          />
-        }
-      </p>
-      <app-duration-vs-estimate
-        class="duration-component"
-        [duration]="duration()"
-        [estimate]="estimate()"
+    @if (projectName()) {
+      <a routerLink="/projects/" class="project-link">{{ projectName() }}</a>
+    } @else {
+      <app-fuzzy-search-field
+        [searchableOptions]="projectNames"
+        placeholder="@project"
       />
+    }
 
-      <app-display-tags [tags]="tags()" />
-    </div>
+    <app-duration-vs-estimate
+      class="duration-component"
+      [duration]="duration()"
+      [estimate]="estimate()"
+    />
+
+    <app-display-tags [tags]="tags()" />
   `,
   styles: `
-    .block-info {
+    :host {
       width: 100%;
       margin: 0.5rem 0 0.2rem 0;
       display: flex;
       align-items: center;
+
+      app-fuzzy-search-field {
+        --search-box-width: 25rem;
+      }
 
       .duration-component {
         margin: 0 1rem;
@@ -47,10 +49,6 @@ import { ProjectService } from "../../data/project.service";
       .project-link {
         display: inline-block;
         color: var(--deep-cyan);
-      }
-
-      .block-title {
-        margin: 0.3rem;
       }
 
       .project-selector {
@@ -79,4 +77,8 @@ export class BlockInfoComponent {
   tags = input<string[]>([]);
 
   projectService = inject(ProjectService);
+
+  get projectNames(): string[] {
+    return this.projectService.projects().map((project) => project.name);
+  }
 }

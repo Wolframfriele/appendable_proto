@@ -59,7 +59,7 @@ import { Command, CommandService } from "../../../shared/data/command.service";
 
         <div
           class="text-container"
-          [class.entry-active]="false"
+          [class.active]="false"
           [style.max-width]="textWidth()"
         >
           @if (entry().showTodo) {
@@ -166,11 +166,6 @@ import { Command, CommandService } from "../../../shared/data/command.service";
           outline: none;
         }
       }
-
-      .entry-active {
-        background-color: var(--lighter-black);
-        border-radius: 5px;
-      }
     }
 
     .done {
@@ -262,7 +257,7 @@ export class OutlinerEntryComponent {
   }
 
   onCheckboxToggled(newValue: boolean) {
-    console.log(`Toggle checkbox for entry ${this.entry().id} to ${newValue}`);
+    console.log(`Toggle checkbox or entry ${this.entry().id} to ${newValue}`);
     this.updatedEntry.update((entry) => ({ ...entry, isDone: newValue }));
     this.entryService.edit$.next(this.updatedEntry());
   }

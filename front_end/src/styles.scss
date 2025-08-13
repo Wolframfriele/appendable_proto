@@ -105,3 +105,7 @@ h3 {
 .hidden {
   opacity: 0;
 }
+
+.active {
+  background: var(--lighter-black);
+}

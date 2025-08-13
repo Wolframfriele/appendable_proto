@@ -1,4 +1,4 @@
-use crate::models::{Block, Entry, NextDataResponse, ResultBlock, ResultEntry};
+use crate::models::{Block, Entry, NextDataResponse, Project, ResultBlock, ResultEntry};
 use anyhow::Result;
 use chrono::NaiveDateTime;
 use sqlx::sqlite::{SqlitePool, SqlitePoolOptions};
@@ -286,4 +286,19 @@ pub async fn select_earlier_timestamp(
     .fetch_one(&db.pool)
     .await?;
     Ok(next_data)
+}
+
+pub async fn select_projects(db: &Database) -> Result<Vec<Project>> {
+    Ok(sqlx::query_as::<_, Project>(
+        "
+    SELECT
+        project_id,
+        name,
+        archived,
+        color
+    FROM projects;
+        ",
+    )
+    .fetch_all(&db.pool)
+    .await?)
 }

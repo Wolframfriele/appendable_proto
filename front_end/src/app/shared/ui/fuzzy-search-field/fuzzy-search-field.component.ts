@@ -16,39 +16,35 @@ import { FormsModule } from "@angular/forms";
   selector: "app-fuzzy-search-field",
   imports: [FormsModule],
   template: `
-    <div class="search-component">
-      <input
-        #searchBox
-        class="fuzzy-search-field"
-        type="text"
-        [placeholder]="placeholder()"
-        [(ngModel)]="searchInput"
-        (keydown)="handleKeyboardInput($event)"
-        autofocus
-      />
-      <hr class="divider" />
-      <ul class="searchable-options">
-        @for (selectable of filterdOptions(); let idx = $index; track idx) {
-          <li [class.active]="isActive(idx)">{{ selectable }}</li>
-        }
-      </ul>
-    </div>
+    <input
+      #searchBox
+      class="fuzzy-search-field"
+      type="text"
+      [placeholder]="placeholder()"
+      [(ngModel)]="searchInput"
+      (keydown)="handleKeyboardInput($event)"
+      autofocus
+    />
+    <ul class="searchable-options">
+      @for (selectable of filterdOptions(); let idx = $index; track idx) {
+        <li [class.active]="isActive(idx)">{{ selectable }}</li>
+      }
+    </ul>
   `,
   styles: `
-    .search-component {
-      background: var(--background);
-      border: solid 1px var(--secondary-text);
-      border-radius: 5px;
-      padding: 0.3rem;
+    :host {
+      width: var(--search-box-width, 20rem);
     }
 
     .fuzzy-search-field {
-      width: 100%;
+      width: var(--search-box-width, 20rem);
       height: 2rem;
-      background: none;
+      background: var(--background);
       color: var(--text-color);
       font-size: 1.25rem;
-      border: none;
+      border: solid 1px var(--secondary-text);
+      border-radius: 5px 5px 0 0;
+      padding: 0.2rem;
     }
 
     .fuzzy-search-field::placeholder {
@@ -59,27 +55,21 @@ import { FormsModule } from "@angular/forms";
       outline: none;
     }
 
-    .divider {
-      width: 100%;
-      margin: 0.3rem 0;
-      padding: 0;
-    }
-
     .searchable-options {
-      display: relative;
+      width: var(--search-box-width, 20rem);
+      background: var(--background-deep);
+      position: fixed;
       list-style: none;
-      padding: 0;
+      border: solid 1px var(--secondary-text);
+      border-radius: 0 0 5px 5px;
+      padding: 0.2rem;
       margin: 0;
       z-index: 1;
     }
 
-    .active {
-      background: var(--active-color);
-      border-radius: 5px;
-    }
-
     li {
       padding: 0.2rem;
+      border-radius: 5px;
     }
   `,
 })
