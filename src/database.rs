@@ -123,6 +123,30 @@ pub async fn select_blocks(db: &Database, start: NaiveDateTime, end: NaiveDateTi
     .unwrap()
 }
 
+pub async fn update_block(db: &Database, block: Block) -> Result<Block> {
+    sqlx::query(
+        "
+    UPDATE blocks SET
+        project=?2,
+        start=DATETIME(?3),
+        end=DATETIME(?4),
+        duration=?5,
+        text=?6
+    WHERE block_id=?1;
+        ",
+    )
+    .bind(block.block_id)
+    .bind(block.project)
+    .bind(block.start)
+    .bind(block.end)
+    .bind(block.duration)
+    .bind(block.text)
+    .execute(&db.pool)
+    .await?;
+
+    select_block(&db, block.block_id).await
+}
+
 pub async fn delete_blocks(db: &Database, block_id: i64) -> bool {
     sqlx::query(
         "

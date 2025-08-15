@@ -5,6 +5,9 @@ import { RouterLink } from "@angular/router";
 import { EntryService } from "../../data/entry.service";
 import { OutlinerEntryComponent } from "../outliner-entry/outliner-entry.component";
 import { DisplayTimePipe } from "../../../pipes/display-time.pipe";
+import { Project } from "../../../model/project.model";
+import { BlockService } from "../../data/block.service";
+import { Command, CommandService } from "../../../shared/data/command.service";
 
 @Component({
   standalone: true,
@@ -24,9 +27,10 @@ import { DisplayTimePipe } from "../../../pipes/display-time.pipe";
       <span class="dot"></span>
       <div class="block-text">
         <app-block-info
-          [projectName]="updatedBlock().projectName"
-          [duration]="updatedBlock().duration"
-          [tags]="updatedBlock().tags"
+          [projectName]="blockModel().projectName"
+          [duration]="blockModel().duration"
+          [tags]="blockModel().tags"
+          (projectSelected)="onProjectSelected($event)"
         />
         @if (findEntriesForBlock() !== undefined) {
           <ul class="entries-list">
@@ -104,9 +108,10 @@ export class OutlinerBlockComponent {
   block = input.required<Block>();
   active = input<boolean>(false);
 
+  blockService = inject(BlockService);
   entryService = inject(EntryService);
 
-  updatedBlock = model<Block>({
+  blockModel = model<Block>({
     id: 0,
     start: new Date(),
     end: undefined,
@@ -119,7 +124,7 @@ export class OutlinerBlockComponent {
 
   constructor() {
     effect(() =>
-      this.updatedBlock.set({
+      this.blockModel.set({
         id: this.block().id,
         start: this.block().start,
         end: this.block().end,
@@ -130,6 +135,17 @@ export class OutlinerBlockComponent {
         tags: this.block().tags,
       }),
     );
+  }
+
+  onProjectSelected(selectedProject: Project) {
+    this.blockModel.update((block) => ({
+      ...block,
+      project: selectedProject.id,
+      projectName: selectedProject.name,
+    }));
+    if (this.blockModel() !== this.block()) {
+      this.blockService.edit$.next(this.blockModel());
+    }
   }
 
   findEntriesForBlock() {

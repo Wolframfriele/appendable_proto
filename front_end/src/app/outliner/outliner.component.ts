@@ -27,6 +27,7 @@ import { FuzzySearchFieldComponent } from "../shared/ui/fuzzy-search-field/fuzzy
         [searchableOptions]="commandService.possibleCommands"
         [setFocus]="isCommandModeActive"
         placeholder="enter commands"
+        [switchToInputMode]="false"
         (selected)="executeCommand($event)"
       />
     }

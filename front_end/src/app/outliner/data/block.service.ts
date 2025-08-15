@@ -9,6 +9,7 @@ import {
   EMPTY,
   map,
   merge,
+  mergeMap,
   startWith,
   Subject,
   switchMap,
@@ -59,7 +60,20 @@ export class BlockService {
       concatMap((block) => {
         console.log(`Added new block: ${block}`);
         return this.http
-          .post(`/api/blocks`, mapToBlockJson(block), this.AS_JSON_HEADERS)
+          .post("/api/blocks", mapToBlockJson(block), this.AS_JSON_HEADERS)
+          .pipe(catchError((err) => this.handleError(err)));
+      }),
+    );
+
+    const blockEdited$ = this.edit$.pipe(
+      mergeMap((block) => {
+        console.log(`Updated block: ${block}`);
+        return this.http
+          .put(
+            `/api/blocks/${block.id}`,
+            mapToBlockJson(block),
+            this.AS_JSON_HEADERS,
+          )
           .pipe(catchError((err) => this.handleError(err)));
       }),
     );
@@ -74,7 +88,12 @@ export class BlockService {
     );
 
     // reducers
-    merge(blockAdded$, blockRemoved$, this.dateRangeService.dateRangeExpanded$)
+    merge(
+      blockAdded$,
+      blockEdited$,
+      blockRemoved$,
+      this.dateRangeService.dateRangeExpanded$,
+    )
       .pipe(
         startWith(null),
         switchMap(() =>

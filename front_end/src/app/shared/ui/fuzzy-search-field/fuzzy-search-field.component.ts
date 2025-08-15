@@ -3,6 +3,7 @@ import {
   computed,
   effect,
   ElementRef,
+  inject,
   input,
   model,
   output,
@@ -10,6 +11,7 @@ import {
   viewChild,
 } from "@angular/core";
 import { FormsModule } from "@angular/forms";
+import { Command, CommandService } from "../../data/command.service";
 
 @Component({
   standalone: true,
@@ -74,9 +76,11 @@ import { FormsModule } from "@angular/forms";
   `,
 })
 export class FuzzySearchFieldComponent {
+  commandService = inject(CommandService);
   searchableOptions = input.required<string[]>();
   placeholder = input.required<string>();
   setFocus = input<boolean>(false);
+  switchToInputMode = input<boolean>(true);
   selected = output<string>();
 
   selectedIdx = signal(0);
@@ -85,13 +89,18 @@ export class FuzzySearchFieldComponent {
 
   filterdOptions = computed(() =>
     this.searchableOptions().filter((option) =>
-      option.includes(this.searchInput()),
+      option.toLowerCase().includes(this.searchInput().toLowerCase()),
     ),
   );
 
   constructor() {
     effect(() => {
       if (this.setFocus()) {
+        if (this.switchToInputMode()) {
+          this.commandService.executeCommand$.next(
+            Command.SWITCH_TO_INSERT_MODE,
+          );
+        }
         this.searchBox().nativeElement.focus();
       }
     });
@@ -117,6 +126,7 @@ export class FuzzySearchFieldComponent {
         }
         break;
       case "Enter":
+        this.commandService.executeCommand$.next(Command.SWITCH_TO_NORMAL_MODE);
         this.selected.emit(this.filterdOptions()[this.selectedIdx()]);
         break;
     }

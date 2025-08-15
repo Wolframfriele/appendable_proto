@@ -12,7 +12,10 @@ use serde::Deserialize;
 use std::sync::Arc;
 
 use track_proto::{
-    database::{delete_blocks, insert_new_block, select_blocks, select_entries, select_projects},
+    database::{
+        delete_blocks, insert_new_block, select_blocks, select_entries, select_projects,
+        update_block,
+    },
     models::{Block, Entry, NextDataResponse, Project},
 };
 
@@ -28,7 +31,10 @@ async fn main() {
 
     let app = Router::new()
         .route("/api/blocks", get(get_blocks).post(post_block))
-        .route("/api/blocks/{block_id}", delete(delete_block_api))
+        .route(
+            "/api/blocks/{block_id}",
+            put(put_block).delete(delete_block_api),
+        )
         .route("/api/entries", get(get_entries).post(post_entry))
         .route(
             "/api/entries/{entry_id}",
@@ -87,6 +93,20 @@ async fn post_block(
     axum::extract::Json(payload): axum::extract::Json<Block>,
 ) -> Result<Json<Block>, BadRequestError> {
     Ok(Json(insert_new_block(&db, payload).await?))
+}
+
+async fn put_block(
+    Path(block_id): Path<i64>,
+    db: State<Arc<Database>>,
+    axum::extract::Json(payload): axum::extract::Json<Block>,
+) -> Result<Json<Block>, BadRequestError> {
+    if block_id != payload.block_id {
+        BadRequestError(anyhow!(
+            "The entry_id in the URL does not match the entry_id in the request body"
+        ));
+    }
+    println!("Put block: {:?}", block_id);
+    Ok(Json(update_block(&db, payload).await?))
 }
 
 async fn get_entries(

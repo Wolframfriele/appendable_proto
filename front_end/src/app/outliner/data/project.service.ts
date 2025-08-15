@@ -73,4 +73,8 @@ export class ProjectService {
     this.state.update((state) => ({ ...state, error: err }));
     return EMPTY;
   }
+
+  public resolveProjectFromName(projectName: string): Project | undefined {
+    return this.projects().find((project) => project.name === projectName);
+  }
 }
