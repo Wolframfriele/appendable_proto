@@ -21,13 +21,12 @@ interface State {
   providedIn: "root",
 })
 export class KeyboardService {
-  commandService = inject(CommandService);
+  private commandService = inject(CommandService);
 
   private state = signal<State>({
     activeControlMode: ControlMode.NORMAL_MODE,
   });
 
-  // selectors
   activeControlMode = computed(() => this.state().activeControlMode);
 
   keyboard$ = fromEvent<KeyboardEvent>(document, "keydown").pipe();

@@ -68,13 +68,8 @@ pub struct Tag {
 }
 
 #[derive(FromRow, Serialize, Deserialize, Debug)]
-pub struct ResultEntry {
-    pub entry_id: i64,
-}
-
-#[derive(FromRow, Serialize, Deserialize, Debug)]
-pub struct ResultBlock {
-    pub block_id: i64,
+pub struct InsertResult {
+    pub id: i64,
 }
 
 #[derive(FromRow, Serialize, Deserialize, Debug)]

@@ -16,6 +16,9 @@ import { Entry, RemoveEntry } from "../../model/entry.model";
 import { mapToEntries, mapToJsonEntry } from "../../model/entry.mapper";
 import { EntryJson } from "../../model/entry.interface";
 import { Command, CommandService } from "../../shared/data/command.service";
+import { BlockService } from "./block.service";
+import { NavigationTargetService } from "../../shared/data/navigation-target.service";
+import { NavigationTarget } from "../../app.routes";
 
 export interface EntryState {
   entries: Map<number, Entry[]>;
@@ -33,10 +36,11 @@ export class EntryService {
   };
 
   private http = inject(HttpClient);
+  private blockService = inject(BlockService);
   private dateRangeService = inject(DateRangeService);
   private commandService = inject(CommandService);
+  private navigationTargetService = inject(NavigationTargetService);
 
-  // state
   private state = signal<EntryState>({
     entries: new Map<number, Entry[]>(),
     loaded: false,
@@ -44,13 +48,11 @@ export class EntryService {
     activeIdx: 0,
   });
 
-  // selectors
   entries = computed(() => this.state().entries);
   loaded = computed(() => this.state().loaded);
   error = computed(() => this.state().error);
-  activeEntryIdx = computed(() => this.state().activeIdx);
+  activeIdx = computed(() => this.state().activeIdx);
 
-  // sources
   add$ = new Subject<Entry>();
   edit$ = new Subject<Entry>();
   remove$ = new Subject<RemoveEntry>();
@@ -87,7 +89,6 @@ export class EntryService {
       }),
     );
 
-    // reducers
     merge(
       entryAdded$,
       entryEdited$,
@@ -114,54 +115,47 @@ export class EntryService {
           loaded: true,
         }));
       });
-  }
 
-  //   this.commandService.executeCommand$.subscribe((command) => {
-  //     switch (command) {
-  //       case Command.MOVE_TO_PREVIOUS_ENTRY:
-  //         this.moveToPreviousEntry();
-  //         break;
-  //       case Command.MOVE_TO_NEXT_ENTRY:
-  //         this.moveToNextEntry();
-  //         break;
-  //       case Command.ADD_NEW_ENTRY:
-  //         this.addNewEntryBelowActive();
-  //         break;
-  //       case Command.ADD_NEW_CHILD_ENTRY:
-  //         break;
-  //     }
-  //   });
-  // }
-
-  // public activateEntry(idx: number, day: Date) {
-  //   const roundedDay = this.toRoundDate.transform(day);
-  //   const entriesForDay = this.entries().get(roundedDay);
-  //   if (entriesForDay && entriesForDay.length > idx) {
-  //     this.state.update((state) => ({
-  //       ...state,
-  //       activeIdx: idx,
-  //       activeDay: roundedDay,
-  //     }));
-  //   }
-  // }
-
-  // public activateEntryById(id: number) {
-  //   this.entries().forEach((entriesForDay, day) => {
-  //     const foundEntry = entriesForDay.find((entry) => entry.id === id);
-  //     if (foundEntry) {
-  //       const idx = entriesForDay.indexOf(foundEntry);
-  //       this.state.update((state) => ({
-  //         ...state,
-  //         activeIdx: idx,
-  //         activeDay: day,
-  //       }));
-  //     }
-  //   });
-  // }
-
-  private handleError(err: any) {
-    this.state.update((state) => ({ ...state, error: err }));
-    return EMPTY;
+    this.commandService.executeCommand$.subscribe((command) => {
+      switch (command) {
+        case Command.MOVE_TO_PREVIOUS_ELEMENT:
+          if (
+            this.navigationTargetService.active() == NavigationTarget.OUTLINER
+          ) {
+            this.moveToPreviousEntry();
+          }
+          break;
+        case Command.MOVE_TO_NEXT_ELEMENT:
+          if (
+            this.navigationTargetService.active() == NavigationTarget.OUTLINER
+          ) {
+            this.moveToNextEntry();
+          }
+          break;
+        // Ugly fix to put this here, required to avoid circular dependency
+        // but that probably is the result of a deeper design flaw
+        case Command.MOVE_TO_PREVIOUS_CONTAINER:
+          if (
+            this.navigationTargetService.active() === NavigationTarget.OUTLINER
+          ) {
+            this.blockService.activatePrevious();
+            // because moving to block requires active entry to be 0
+            this.state.update((state) => ({ ...state, activeIdx: 0 }));
+          }
+          break;
+        // Ugly fix to put this here, required to avoid circular dependency
+        // but that probably is the result of a deeper design flaw
+        case Command.MOVE_TO_NEXT_CONTAINER:
+          if (
+            this.navigationTargetService.active() === NavigationTarget.OUTLINER
+          ) {
+            this.blockService.activateNext();
+            // because moving to block requires active entry to be 0
+            this.state.update((state) => ({ ...state, activeIdx: 0 }));
+          }
+          break;
+      }
+    });
   }
 
   private groupEntriesByParent(entries: Entry[]): Map<number, Entry[]> {
@@ -187,110 +181,57 @@ export class EntryService {
     };
   }
 
-  // private moveToPreviousEntry() {
-  //   if (this.state().activeIdx > 0) {
-  //     this.state.update((state) => ({
-  //       ...state,
-  //       activeIdx: state.activeIdx - 1,
-  //     }));
-  //   } else {
-  //     const previousDay = this.previousDay();
-  //     if (previousDay) {
-  //       const amountOfEntriesInPreviousDay =
-  //         this.entries().get(previousDay)?.length;
+  private moveToPreviousEntry() {
+    if (this.activeIdx() > 0) {
+      this.state.update((state) => ({
+        ...state,
+        activeIdx: state.activeIdx - 1,
+      }));
+    } else {
+      if (this.blockService.activatePrevious()) {
+        console.log("previous block activated");
+        this.state.update((state) => ({
+          ...state,
+          activeIdx: this.getLastEntryIdxOfBlock(),
+        }));
+      }
+    }
+  }
 
-  //       if (amountOfEntriesInPreviousDay) {
-  //         this.state.update((state) => ({
-  //           ...state,
-  //           activeIdx: amountOfEntriesInPreviousDay - 1,
-  //           activeDay: previousDay,
-  //         }));
-  //       }
-  //     }
-  //   }
-  // }
+  private getLastEntryIdxOfBlock(): number {
+    const entriesOfPreviousBlock = this.entries().get(
+      this.blockService.blocks()[this.blockService.activeIdx()].id,
+    );
+    if (entriesOfPreviousBlock) {
+      return entriesOfPreviousBlock.length - 1;
+    }
+    return 0;
+  }
 
-  // private moveToNextEntry() {
-  //   const amountOfEntriesInCurrentDay = this.entries().get(
-  //     this.state().activeDay,
-  //   )?.length;
-  //   if (
-  //     amountOfEntriesInCurrentDay &&
-  //     this.state().activeIdx < amountOfEntriesInCurrentDay - 1
-  //   ) {
-  //     this.state.update((state) => ({
-  //       ...state,
-  //       activeIdx: state.activeIdx + 1,
-  //     }));
-  //   } else {
-  //     const nextDay = this.nextDay();
-  //     if (nextDay) {
-  //       if (this.entries().has(nextDay)) {
-  //         this.state.update((state) => ({
-  //           ...state,
-  //           activeIdx: 0,
-  //           activeDay: nextDay,
-  //         }));
-  //       }
-  //     }
-  //   }
-  // }
+  private moveToNextEntry() {
+    const amountOfEntriesForBlock = this.entries().get(
+      this.blockService.active.id,
+    )?.length;
+    if (
+      amountOfEntriesForBlock &&
+      this.state().activeIdx < amountOfEntriesForBlock - 1
+    ) {
+      this.state.update((state) => ({
+        ...state,
+        activeIdx: state.activeIdx + 1,
+      }));
+    } else {
+      if (this.blockService.activateNext()) {
+        this.state.update((state) => ({
+          ...state,
+          activeIdx: 0,
+        }));
+      }
+    }
+  }
 
-  // private previousDay(): string | undefined {
-  //   const loadedDays = Array.from(this.entries().keys());
-  //   loadedDays.sort().reverse();
-
-  //   const currentDayIdx = loadedDays.indexOf(this.activeDay());
-  //   if (currentDayIdx > 0) {
-  //     return loadedDays[currentDayIdx - 1];
-  //   }
-
-  //   return undefined;
-  // }
-
-  // private nextDay() {
-  //   const loadedDays = Array.from(this.entries().keys());
-  //   loadedDays.sort().reverse();
-
-  //   const currentDayIdx = loadedDays.indexOf(this.activeDay());
-  //   if (currentDayIdx >= 0 && currentDayIdx < loadedDays.length) {
-  //     return loadedDays[currentDayIdx + 1];
-  //   }
-
-  //   return undefined;
-  // }
-
-  // // Tries to convert the activeDay and activeEntryIdx to an actual Entry object
-  // findActiveEntry(): Entry | undefined {
-  //   const entriesActiveDay = this.entries().get(this.activeDay());
-  //   if (entriesActiveDay && entriesActiveDay.length > this.activeEntryIdx()) {
-  //     return entriesActiveDay[this.activeEntryIdx()];
-  //   }
-  //   return undefined;
-  // }
-
-  // private addNewEntryBelowActive() {
-  //   const activeEntry = this.findActiveEntry();
-  //   if (activeEntry) {
-  //     this.add$.next({
-  //       id: 0,
-  //       parent: activeEntry.parent,
-  //       path: activeEntry.path,
-  //       nesting: activeEntry.nesting,
-  //       startTimestamp: new Date(),
-  //       endTimestamp: undefined,
-  //       text: "",
-  //       showTodo: false,
-  //       isDone: false,
-  //       estimatedDuration: 0,
-  //       tags: [],
-  //     });
-
-  //     // need to handle not pressing enter on the most bottom option
-  //     this.state.update((state) => ({
-  //       ...state,
-  //       activeIdx: state.activeIdx + 1,
-  //     }));
-  //   }
-  // }
+  private handleError(err: any) {
+    this.state.update((state) => ({ ...state, error: err }));
+    return EMPTY;
+  }
 }

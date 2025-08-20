@@ -17,6 +17,9 @@ import {
 import { BlockJson } from "../../model/block.interface";
 import { mapToBlockJson, mapToBlocks } from "../../model/block.mapper";
 import { takeUntilDestroyed } from "@angular/core/rxjs-interop";
+import { NavigationTargetService } from "../../shared/data/navigation-target.service";
+import { NavigationTarget } from "../../app.routes";
+import { EntryService } from "./entry.service";
 
 export interface BlockState {
   blocks: Block[];
@@ -36,6 +39,7 @@ export class BlockService {
   private http = inject(HttpClient);
   private dateRangeService = inject(DateRangeService);
   private commandService = inject(CommandService);
+  private activeRouteService = inject(NavigationTargetService);
 
   private state = signal<BlockState>({
     blocks: [],
@@ -44,13 +48,11 @@ export class BlockService {
     activeIdx: 0,
   });
 
-  // selectors
   blocks = computed(() => this.state().blocks);
   loaded = computed(() => this.state().loaded);
   error = computed(() => this.state().error);
   activeIdx = computed(() => this.state().activeIdx);
 
-  // sources
   add$ = new Subject<Block>();
   edit$ = new Subject<Block>();
   remove$ = new Subject<RemoveBlock>();
@@ -87,7 +89,6 @@ export class BlockService {
       }),
     );
 
-    // reducers
     merge(
       blockAdded$,
       blockEdited$,
@@ -119,21 +120,22 @@ export class BlockService {
         case Command.ADD_NEW_BLOCK:
           this.addNewBlock();
           break;
-        case Command.MOVE_TO_PREVIOUS_BLOCK:
-          this.moveToPreviousBlock();
-          break;
-        case Command.MOVE_TO_NEXT_BLOCK:
-          this.moveToNextBlock();
-          break;
-        case Command.DELETE_ACTIVE_BLOCK:
+        case Command.DELETE_SELECTED_BLOCK:
           this.deleteActiveBlock();
+          break;
+        case Command.END_SELECTED_BLOCK:
+          this.endActiveBlock();
           break;
       }
     });
   }
 
+  public get active(): Block {
+    return this.blocks()[this.activeIdx()];
+  }
+
   public setActive(idx: number) {
-    if (idx >= 0 && idx <= this.state().blocks.length) {
+    if (idx >= 0 && idx <= this.blocks().length) {
       this.state.update((state) => ({
         ...state,
         activeIdx: idx,
@@ -141,8 +143,26 @@ export class BlockService {
     }
   }
 
-  public get activeId(): number {
-    return this.blocks()[this.activeIdx()].id;
+  public activatePrevious(): boolean {
+    if (this.state().activeIdx > 0) {
+      this.state.update((state) => ({
+        ...state,
+        activeIdx: state.activeIdx - 1,
+      }));
+      return true;
+    }
+    return false;
+  }
+
+  public activateNext(): boolean {
+    if (this.state().activeIdx < this.blocks().length - 1) {
+      this.state.update((state) => ({
+        ...state,
+        activeIdx: state.activeIdx + 1,
+      }));
+      return true;
+    }
+    return false;
   }
 
   private handleError(err: any) {
@@ -164,25 +184,13 @@ export class BlockService {
     this.setActive(0);
   }
 
-  private moveToPreviousBlock() {
-    if (this.state().activeIdx > 0) {
-      this.state.update((state) => ({
-        ...state,
-        activeIdx: state.activeIdx - 1,
-      }));
-    }
-  }
-
-  private moveToNextBlock() {
-    if (this.state().activeIdx < this.state().blocks.length - 1) {
-      this.state.update((state) => ({
-        ...state,
-        activeIdx: state.activeIdx + 1,
-      }));
-    }
-  }
-
   private deleteActiveBlock() {
-    this.remove$.next({ id: this.activeId });
+    this.remove$.next({ id: this.active.id });
+  }
+
+  private endActiveBlock() {
+    let activeBlock = this.active;
+    activeBlock.end = new Date();
+    this.edit$.next(activeBlock);
   }
 }

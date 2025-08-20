@@ -1,4 +1,4 @@
-use crate::models::{Block, Entry, NextDataResponse, Project, ResultBlock, ResultEntry};
+use crate::models::{Block, Entry, InsertResult, NextDataResponse, Project};
 use anyhow::Result;
 use chrono::NaiveDateTime;
 use sqlx::sqlite::{SqlitePool, SqlitePoolOptions};
@@ -43,7 +43,7 @@ async fn update_end_timestamps_of_unclosed_blocks(db: &Database, block: &Block) 
 
 async fn insert_block(db: &Database, block: Block) -> Result<i64> {
     println!("inserting new block");
-    let new_block_id = sqlx::query_as::<_, ResultBlock>(
+    let new_block_id = sqlx::query_as::<_, InsertResult>(
         "
         INSERT INTO blocks (
             text,
@@ -55,7 +55,7 @@ async fn insert_block(db: &Database, block: Block) -> Result<i64> {
             ?2,
             DATETIME(?3),
             0
-        ) RETURNING block_id;
+        ) RETURNING block_id AS id;
             ",
     )
     .bind(block.text)
@@ -63,7 +63,7 @@ async fn insert_block(db: &Database, block: Block) -> Result<i64> {
     .bind(block.start)
     .fetch_one(&db.pool)
     .await?;
-    Ok(new_block_id.block_id)
+    Ok(new_block_id.id)
 }
 
 pub async fn select_block(db: &Database, block_id: i64) -> Result<Block> {
@@ -130,8 +130,8 @@ pub async fn update_block(db: &Database, block: Block) -> Result<Block> {
         project=?2,
         start=DATETIME(?3),
         end=DATETIME(?4),
-        duration=?5,
-        text=?6
+        duration=STRFTIME('%s', DATETIME(?4)) - STRFTIME('%s', ?3),
+        text=?5
     WHERE block_id=?1;
         ",
     )
@@ -139,7 +139,6 @@ pub async fn update_block(db: &Database, block: Block) -> Result<Block> {
     .bind(block.project)
     .bind(block.start)
     .bind(block.end)
-    .bind(block.duration)
     .bind(block.text)
     .execute(&db.pool)
     .await?;
@@ -268,7 +267,7 @@ pub async fn delete_entry(db: &Database, entry_id: i64, with_children: bool) -> 
 }
 
 async fn insert_entry(db: &Database, entry: &Entry) -> Result<i64> {
-    let new_entry_id = sqlx::query_as::<_, ResultEntry>(
+    let new_entry_id = sqlx::query_as::<_, InsertResult>(
         "
     INSERT INTO entries (
         parent,
@@ -282,7 +281,7 @@ async fn insert_entry(db: &Database, entry: &Entry) -> Result<i64> {
         ?3,
         ?4,
         ?5
-    ) RETURNING entry_id;
+    ) RETURNING entry_id AS id;
         ",
     )
     .bind(entry.parent)
@@ -292,7 +291,7 @@ async fn insert_entry(db: &Database, entry: &Entry) -> Result<i64> {
     .bind(entry.is_done)
     .fetch_one(&db.pool)
     .await?;
-    Ok(new_entry_id.entry_id)
+    Ok(new_entry_id.id)
 }
 
 pub async fn select_earlier_timestamp(
@@ -325,4 +324,67 @@ pub async fn select_projects(db: &Database) -> Result<Vec<Project>> {
     )
     .fetch_all(&db.pool)
     .await?)
+}
+
+pub async fn select_project(db: &Database, project_id: i64) -> Result<Project> {
+    Ok(sqlx::query_as::<_, Project>(
+        "
+    SELECT
+        project_id,
+        name,
+        archived,
+        color
+    FROM projects WHERE project_id = ?1;
+        ",
+    )
+    .bind(project_id)
+    .fetch_one(&db.pool)
+    .await?)
+}
+
+pub async fn insert_project(db: &Database, project: &Project) -> Result<i64> {
+    let new_project_id = sqlx::query_as::<_, InsertResult>(
+        "
+    INSERT INTO projects (
+        name,
+        archived,
+        color
+    ) VALUES (
+        ?1,
+        ?2,
+        ?3
+    ) RETURNING project_id AS id;
+        ",
+    )
+    .bind(&project.name)
+    .bind(project.archived)
+    .bind(&project.color)
+    .fetch_one(&db.pool)
+    .await?;
+    Ok(new_project_id.id)
+}
+
+pub async fn insert_new_project(db: &Database, project: Project) -> Result<Project> {
+    let new_project_id = insert_project(db, &project).await?;
+    Ok(select_project(db, new_project_id).await?)
+}
+
+pub async fn update_projects(db: &Database, project: Project) -> Result<Project> {
+    sqlx::query(
+        "
+    UPDATE projects SET
+        name=?2,
+        archived=?3,
+        color=?4,
+    WHERE entry_id=?1;
+        ",
+    )
+    .bind(project.project_id)
+    .bind(project.name)
+    .bind(project.archived)
+    .bind(project.color)
+    .execute(&db.pool)
+    .await?;
+
+    select_project(db, project.project_id).await
 }

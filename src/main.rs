@@ -2,7 +2,7 @@ use axum::{
     extract::{Path, Query, State},
     http::StatusCode,
     response::{IntoResponse, Response},
-    routing::{delete, get, put},
+    routing::{get, post, put},
     Json, Router,
 };
 
@@ -13,8 +13,8 @@ use std::sync::Arc;
 
 use track_proto::{
     database::{
-        delete_blocks, insert_new_block, select_blocks, select_entries, select_projects,
-        update_block,
+        delete_blocks, insert_new_block, insert_new_project, select_blocks, select_entries,
+        select_projects, update_block,
     },
     models::{Block, Entry, NextDataResponse, Project},
 };
@@ -41,6 +41,7 @@ async fn main() {
             put(put_entry).delete(delete_entry_api),
         )
         .route("/api/projects", get(get_projects))
+        .route("/api/projects/{project_id}", post(post_projects))
         .route(
             "/api/earlier_blocks/{last_data}",
             get(get_first_block_timestamp_before),
@@ -149,13 +150,13 @@ async fn put_entry(
 }
 
 #[derive(Deserialize)]
-struct DeleteEntrieParams {
+struct DeleteEntriesParams {
     with_children: Option<bool>,
 }
 
 async fn delete_entry_api(
     Path(entry_id): Path<i64>,
-    params: Query<DeleteEntrieParams>,
+    params: Query<DeleteEntriesParams>,
     db: State<Arc<Database>>,
 ) -> impl IntoResponse {
     println!(
@@ -182,6 +183,14 @@ async fn get_first_block_timestamp_before(
 async fn get_projects(db: State<Arc<Database>>) -> Result<Json<Vec<Project>>, BadRequestError> {
     println!("Get projects");
     Ok(Json(select_projects(&db).await?))
+}
+
+async fn post_projects(
+    db: State<Arc<Database>>,
+    axum::extract::Json(payload): axum::extract::Json<Project>,
+) -> Result<Json<Project>, BadRequestError> {
+    println!("Post new project: {:?}", payload);
+    Ok(Json(insert_new_project(&db, payload).await?))
 }
 
 // Error handling

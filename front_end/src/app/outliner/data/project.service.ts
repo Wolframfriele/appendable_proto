@@ -4,6 +4,7 @@ import { HttpClient, HttpHeaders } from "@angular/common/http";
 import { CommandService } from "../../shared/data/command.service";
 import {
   catchError,
+  concatMap,
   EMPTY,
   map,
   merge,
@@ -12,7 +13,11 @@ import {
   switchMap,
 } from "rxjs";
 import { ProjectJson } from "../../model/project.interface";
-import { mapToProjects } from "../../model/project.mapper";
+import {
+  mapToProject,
+  mapToProjectJson,
+  mapToProjects,
+} from "../../model/project.mapper";
 import { takeUntilDestroyed } from "@angular/core/rxjs-interop";
 
 export interface ProjectState {
@@ -30,7 +35,6 @@ export class ProjectService {
   };
 
   private http = inject(HttpClient);
-  private commandService = inject(CommandService);
 
   private state = signal<ProjectState>({
     projects: [],
@@ -38,18 +42,29 @@ export class ProjectService {
     error: null,
   });
 
-  // selectors
   projects = computed(() => this.state().projects);
   loaded = computed(() => this.state().loaded);
   error = computed(() => this.state().error);
 
-  // sources
   add$ = new Subject<Project>();
   edit$ = new Subject<Project>();
   remove$ = new Subject<Project>();
 
   constructor() {
-    merge()
+    const projectAdded$ = this.add$.pipe(
+      concatMap((project) => {
+        console.log(`Adding project: ${project}`);
+        return this.http
+          .post<ProjectJson>(
+            `/api/projects/${project.id}`,
+            mapToProjectJson(project),
+            this.AS_JSON_HEADERS,
+          )
+          .pipe(catchError((err) => this.handleError(err)));
+      }),
+    );
+
+    merge(projectAdded$)
       .pipe(
         startWith(null),
         switchMap(() =>
@@ -74,7 +89,7 @@ export class ProjectService {
     return EMPTY;
   }
 
-  public resolveProjectFromName(projectName: string): Project | undefined {
+  public resolveFromName(projectName: string): Project | undefined {
     return this.projects().find((project) => project.name === projectName);
   }
 }

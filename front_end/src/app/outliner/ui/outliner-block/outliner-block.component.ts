@@ -48,6 +48,7 @@ import { Command, CommandService } from "../../../shared/data/command.service";
       width: 50rem;
       margin-bottom: 1rem;
       background: var(--background-deep);
+      border-left: 5px solid var(--background-deep);
       border-radius: 5px;
       padding: 0.5rem;
     }

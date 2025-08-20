@@ -28,6 +28,7 @@ import { Project } from "../../../model/project.model";
         [searchableOptions]="projectNames"
         placeholder="@project"
         [setFocus]="true"
+        [allowCreation]="true"
         (selected)="onProjectSelected($event)"
       />
     }
@@ -94,12 +95,22 @@ export class BlockInfoComponent {
   }
 
   onProjectSelected(projectName: string) {
-    const project = this.projectService.resolveProjectFromName(projectName);
+    const project = this.projectService.resolveFromName(projectName);
     if (project) {
       this.projectSelected.emit(project);
     } else {
-      // Create a new project. Also requires me to make it possible to return
-      // unknown values from the fuzzy selector component
+      this.projectService.add$.next({
+        id: 0,
+        name: projectName,
+        color: "ffffff",
+        archived: false,
+      });
+
+      // await until the resolveFromName manages to resolve then emit the projectSelected
+      const newProject = this.projectService.resolveFromName(projectName);
+      if (newProject) {
+        this.projectSelected.emit(newProject);
+      }
     }
   }
 }

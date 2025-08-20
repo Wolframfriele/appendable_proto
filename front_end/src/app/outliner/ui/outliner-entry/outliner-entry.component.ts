@@ -14,8 +14,12 @@ import { ContenteditableDirective } from "../../../model/contenteditable.model";
 import { Entry } from "../../../model/entry.model";
 import { EntryService } from "../../data/entry.service";
 import { RoundDatePipe } from "../../../pipes/round-date.pipe";
-import { KeyboardService } from "../../../shared/data/keyboard.service";
+import {
+  ControlMode,
+  KeyboardService,
+} from "../../../shared/data/keyboard.service";
 import { Command, CommandService } from "../../../shared/data/command.service";
+import { BlockService } from "../../data/block.service";
 
 @Component({
   selector: "app-outliner-entry",
@@ -59,7 +63,7 @@ import { Command, CommandService } from "../../../shared/data/command.service";
 
         <div
           class="text-container"
-          [class.active]="false"
+          [class.active]="isActive()"
           [style.max-width]="textWidth()"
         >
           @if (entry().showTodo) {
@@ -154,8 +158,9 @@ import { Command, CommandService } from "../../../shared/data/command.service";
       }
 
       .text-container {
-        padding: 0.1rem 0;
+        padding: 0.1rem 0.1rem;
         min-height: 1.5rem;
+        border-radius: 5px;
 
         .duration-component {
           margin-right: 0.5rem;
@@ -175,6 +180,7 @@ import { Command, CommandService } from "../../../shared/data/command.service";
 })
 export class OutlinerEntryComponent {
   entryService = inject(EntryService);
+  blockService = inject(BlockService);
   keyboardService = inject(KeyboardService);
   commandService = inject(CommandService);
 
@@ -197,17 +203,16 @@ export class OutlinerEntryComponent {
   isDotHovered = signal(false);
   isMenuHovered = signal(false);
   isMenuOpen = computed(() => this.isDotHovered() || this.isMenuHovered());
-  // isActive = computed(() => {
-  //   const idxMatchesActive = this.idx() === this.entryService.activeEntryIdx();
-  //   const dayMatchesActive =
-  //     this.toRoundDate.transform(this.entry().startTimestamp) ===
-  //     this.entryService.activeDay();
-  //   return (
-  //     idxMatchesActive &&
-  //     dayMatchesActive &&
-  //     this.keyboardService.activeControlMode() !== ControlMode.INSERT_MODE
-  //   );
-  // });
+  isActive = computed(() => {
+    const isIdxActive = this.idx() === this.entryService.activeIdx();
+    const isParentBlockActive =
+      this.entry().parent === this.blockService.active.id;
+    return (
+      isIdxActive &&
+      isParentBlockActive &&
+      this.keyboardService.activeControlMode() !== ControlMode.INSERT_MODE
+    );
+  });
 
   indentArray: Signal<number[]> = computed(() => {
     return Array(this.entry().nesting)

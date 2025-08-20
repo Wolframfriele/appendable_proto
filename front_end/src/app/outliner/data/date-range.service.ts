@@ -17,7 +17,7 @@ interface NextDataJson {
   providedIn: "root",
 })
 export class DateRangeService {
-  http = inject(HttpClient);
+  private http = inject(HttpClient);
 
   // state
   private state = signal<DateRangeState>({
@@ -26,20 +26,16 @@ export class DateRangeService {
     error: null,
   });
 
-  // selectors
   start = computed(() => this.state().start);
   end = computed(() => this.state().end);
 
-  // sources
   expand$ = new Subject<undefined>();
 
-  // outputs
   dateRangeExpanded$ = toObservable(this.state);
 
   constructor() {
     this.expand$
       .pipe(
-        // trigger first call to return the last available data
         startWith(undefined),
         concatMap(() => {
           return this.http

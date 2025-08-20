@@ -2,20 +2,22 @@ import { Injectable } from "@angular/core";
 import { Subject } from "rxjs";
 
 export enum Command {
-  SWITCH_TO_NORMAL_MODE = "keyboard: switch to normal mode",
-  SWITCH_TO_INSERT_MODE = "keyboard: switch to insert mode",
-  SWITCH_TO_VISUAL_MODE = "keyboard: switch to visual mode",
-  SWITCH_TO_COMMAND_MODE = "keyboard: switch to command mode",
+  SWITCH_TO_NORMAL_MODE = "navigation: switch to normal mode",
+  SWITCH_TO_INSERT_MODE = "navigation: switch to insert mode",
+  SWITCH_TO_VISUAL_MODE = "navigation: switch to visual mode",
+  SWITCH_TO_COMMAND_MODE = "navigation: switch to command mode",
 
-  ADD_NEW_BLOCK = "outliner: add new block",
-  MOVE_TO_PREVIOUS_BLOCK = "outliner: move to previous block",
-  MOVE_TO_NEXT_BLOCK = "outliner: move to next block",
-  DELETE_ACTIVE_BLOCK = "outliner: delete active block",
+  MOVE_TO_PREVIOUS_CONTAINER = "navigation: move to previous container",
+  MOVE_TO_NEXT_CONTAINER = "navigation: move to next container",
+  MOVE_TO_PREVIOUS_ELEMENT = "navigation: move to previous element",
+  MOVE_TO_NEXT_ELEMENT = "navigation: move to next element",
 
-  ADD_NEW_ENTRY = "outliner: add new entry",
-  ADD_NEW_CHILD_ENTRY = "outliner: add new child entry",
-  MOVE_TO_PREVIOUS_ENTRY = "outliner: move to previous entry",
-  MOVE_TO_NEXT_ENTRY = "outliner: move to next entry",
+  ADD_NEW_BLOCK = "crud: add new block",
+  DELETE_SELECTED_BLOCK = "crud: delete selected block",
+  END_SELECTED_BLOCK = "crud: end selected block",
+
+  ADD_NEW_ENTRY = "crud: add new entry",
+  ADD_NEW_CHILD_ENTRY = "crud: add new child entry",
 }
 
 @Injectable({
@@ -24,10 +26,6 @@ export enum Command {
 export class CommandService {
   // Option to call commands
   executeCommand$ = new Subject<Command>();
-
-  // Also has an output stream of executed commands with arguments
-
-  constructor() {}
 
   public get possibleCommands(): string[] {
     return Object.values(Command);
