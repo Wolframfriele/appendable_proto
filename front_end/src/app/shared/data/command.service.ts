@@ -7,12 +7,15 @@ export enum Command {
   SWITCH_TO_VISUAL_MODE = "navigation: switch to visual mode",
   SWITCH_TO_COMMAND_MODE = "navigation: switch to command mode",
 
+  GO_TO_OUTLINER = "navigation: go to outliner",
+  GO_TO_PROJECTS = "navigation: go to projects",
+
   MOVE_TO_PREVIOUS_CONTAINER = "navigation: move to previous container",
   MOVE_TO_NEXT_CONTAINER = "navigation: move to next container",
   MOVE_TO_PREVIOUS_ELEMENT = "navigation: move to previous element",
   MOVE_TO_NEXT_ELEMENT = "navigation: move to next element",
 
-  ADD_NEW_BLOCK = "crud: add new block",
+  ADD_NEW = "crud: add new element",
   DELETE_SELECTED_BLOCK = "crud: delete selected block",
   END_SELECTED_BLOCK = "crud: end selected block",
 

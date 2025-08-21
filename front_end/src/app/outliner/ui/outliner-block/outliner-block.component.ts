@@ -7,7 +7,7 @@ import { OutlinerEntryComponent } from "../outliner-entry/outliner-entry.compone
 import { DisplayTimePipe } from "../../../pipes/display-time.pipe";
 import { Project } from "../../../model/project.model";
 import { BlockService } from "../../data/block.service";
-import { Command, CommandService } from "../../../shared/data/command.service";
+import { Entry } from "../../../model/entry.model";
 
 @Component({
   standalone: true,
@@ -23,7 +23,7 @@ import { Command, CommandService } from "../../../shared/data/command.service";
   },
   template: `
     <div class="block-elements-container">
-      <span class="line" [class.hidden]="hasNoEntries"></span>
+      <span class="line" [class.hidden]="!hasEntries"></span>
       <span class="dot"></span>
       <div class="block-text">
         <app-block-info
@@ -32,10 +32,14 @@ import { Command, CommandService } from "../../../shared/data/command.service";
           [tags]="blockModel().tags"
           (projectSelected)="onProjectSelected($event)"
         />
-        @if (findEntriesForBlock() !== undefined) {
+        @if (hasEntries) {
           <ul class="entries-list">
-            @for (entry of findEntriesForBlock(); track idx; let idx = $index) {
-              <app-outliner-entry [entry]="entry" [idx]="idx" />
+            @for (entry of entriesForBlock(); track idx; let idx = $index) {
+              <app-outliner-entry
+                [entry]="entry"
+                [idx]="idx"
+                [isActive]="entryIsActive(idx)"
+              />
             }
           </ul>
         }
@@ -107,7 +111,9 @@ import { Command, CommandService } from "../../../shared/data/command.service";
 })
 export class OutlinerBlockComponent {
   block = input.required<Block>();
-  active = input<boolean>(false);
+  entriesForBlock = input<Entry[] | undefined>(undefined);
+  active = input(false);
+  activeEntry = input<number>(0);
 
   blockService = inject(BlockService);
   entryService = inject(EntryService);
@@ -149,14 +155,17 @@ export class OutlinerBlockComponent {
     }
   }
 
-  findEntriesForBlock() {
-    return this.entryService.entries().get(this.block().id);
+  get hasEntries() {
+    if (this.entriesForBlock()) {
+      return true;
+    }
+    return false;
   }
 
-  get hasNoEntries() {
-    if (this.findEntriesForBlock()) {
-      return false;
+  entryIsActive(idx: number): boolean {
+    if (this.active() && this.activeEntry() === idx) {
+      return true;
     }
-    return true;
+    return false;
   }
 }

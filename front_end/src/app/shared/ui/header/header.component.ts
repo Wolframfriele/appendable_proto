@@ -1,28 +1,26 @@
-import { Component } from '@angular/core';
-import { FilterComponent } from '../filter/filter.component';
+import { Component } from "@angular/core";
+import { FilterComponent } from "../filter/filter.component";
+import { NavigationComponent } from "../navigation/navigation.component";
 
 @Component({
-  selector: 'app-header',
+  selector: "app-header",
   standalone: true,
-  imports: [FilterComponent],
+  imports: [NavigationComponent, FilterComponent],
   template: `
-    <div class="header">
-      <app-filter class="filter" />
-    </div>
+    <app-navigation />
+    <app-filter class="filter" />
   `,
   styles: `
-    .header {
+    :host {
       display: flex;
-      justify-content: end;
       position: sticky;
       top: 0;
+      justify-content: space-between;
     }
 
     .filter {
       margin: 0.3rem 0.3rem;
     }
-  `
+  `,
 })
-export class HeaderComponent {
-
-}
+export class HeaderComponent {}

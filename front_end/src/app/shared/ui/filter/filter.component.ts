@@ -3,24 +3,23 @@ import { NgIcon, provideIcons } from "@ng-icons/core";
 import { octFilter } from "@ng-icons/octicons";
 
 @Component({
+  standalone: true,
   selector: "app-filter",
   imports: [NgIcon],
   template: `
-    <div class="filter-container">
-      <div class="custom-filters">
-        filters:
-        <ul class="filter-options">
-          <li class="active-filter">Personal</li>
-          <li>Work</li>
-          <li>Not Done</li>
-          <li>+</li>
-          <ng-icon name="octFilter" class="icon" />
-        </ul>
-      </div>
+    <div class="custom-filters">
+      filters:
+      <ul class="filter-options">
+        <li class="active-filter">Personal</li>
+        <li>Work</li>
+        <li>Not Done</li>
+        <li>+</li>
+        <ng-icon name="octFilter" class="icon" />
+      </ul>
     </div>
   `,
   styles: `
-    .filter-container {
+    :host {
       display: flex;
       gap: 1rem;
       align-items: center;
@@ -69,4 +68,4 @@ import { octFilter } from "@ng-icons/octicons";
   `,
   viewProviders: [provideIcons({ octFilter })],
 })
-export class FilterComponent { }
+export class FilterComponent {}

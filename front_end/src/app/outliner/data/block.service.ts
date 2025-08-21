@@ -1,7 +1,6 @@
 import { HttpClient, HttpHeaders } from "@angular/common/http";
 import { computed, inject, Injectable, signal } from "@angular/core";
 import { DateRangeService } from "./date-range.service";
-import { Command, CommandService } from "../../shared/data/command.service";
 import { Block, RemoveBlock } from "../../model/block.model";
 import {
   catchError,
@@ -17,15 +16,11 @@ import {
 import { BlockJson } from "../../model/block.interface";
 import { mapToBlockJson, mapToBlocks } from "../../model/block.mapper";
 import { takeUntilDestroyed } from "@angular/core/rxjs-interop";
-import { NavigationTargetService } from "../../shared/data/navigation-target.service";
-import { NavigationTarget } from "../../app.routes";
-import { EntryService } from "./entry.service";
 
 export interface BlockState {
   blocks: Block[];
   loaded: boolean;
   error: String | null;
-  activeIdx: number;
 }
 
 @Injectable({
@@ -38,20 +33,16 @@ export class BlockService {
 
   private http = inject(HttpClient);
   private dateRangeService = inject(DateRangeService);
-  private commandService = inject(CommandService);
-  private activeRouteService = inject(NavigationTargetService);
 
   private state = signal<BlockState>({
     blocks: [],
     loaded: false,
     error: null,
-    activeIdx: 0,
   });
 
   blocks = computed(() => this.state().blocks);
   loaded = computed(() => this.state().loaded);
   error = computed(() => this.state().error);
-  activeIdx = computed(() => this.state().activeIdx);
 
   add$ = new Subject<Block>();
   edit$ = new Subject<Block>();
@@ -114,83 +105,10 @@ export class BlockService {
           loaded: true,
         }));
       });
-
-    this.commandService.executeCommand$.subscribe((command) => {
-      switch (command) {
-        case Command.ADD_NEW_BLOCK:
-          this.addNewBlock();
-          break;
-        case Command.DELETE_SELECTED_BLOCK:
-          this.deleteActiveBlock();
-          break;
-        case Command.END_SELECTED_BLOCK:
-          this.endActiveBlock();
-          break;
-      }
-    });
-  }
-
-  public get active(): Block {
-    return this.blocks()[this.activeIdx()];
-  }
-
-  public setActive(idx: number) {
-    if (idx >= 0 && idx <= this.blocks().length) {
-      this.state.update((state) => ({
-        ...state,
-        activeIdx: idx,
-      }));
-    }
-  }
-
-  public activatePrevious(): boolean {
-    if (this.state().activeIdx > 0) {
-      this.state.update((state) => ({
-        ...state,
-        activeIdx: state.activeIdx - 1,
-      }));
-      return true;
-    }
-    return false;
-  }
-
-  public activateNext(): boolean {
-    if (this.state().activeIdx < this.blocks().length - 1) {
-      this.state.update((state) => ({
-        ...state,
-        activeIdx: state.activeIdx + 1,
-      }));
-      return true;
-    }
-    return false;
   }
 
   private handleError(err: any) {
     this.state.update((state) => ({ ...state, error: err }));
     return EMPTY;
-  }
-
-  private addNewBlock() {
-    this.add$.next({
-      id: 0,
-      text: "",
-      project: undefined,
-      projectName: undefined,
-      start: new Date(),
-      end: undefined,
-      duration: 0,
-      tags: [],
-    });
-    this.setActive(0);
-  }
-
-  private deleteActiveBlock() {
-    this.remove$.next({ id: this.active.id });
-  }
-
-  private endActiveBlock() {
-    let activeBlock = this.active;
-    activeBlock.end = new Date();
-    this.edit$.next(activeBlock);
   }
 }

@@ -14,12 +14,8 @@ import { ContenteditableDirective } from "../../../model/contenteditable.model";
 import { Entry } from "../../../model/entry.model";
 import { EntryService } from "../../data/entry.service";
 import { RoundDatePipe } from "../../../pipes/round-date.pipe";
-import {
-  ControlMode,
-  KeyboardService,
-} from "../../../shared/data/keyboard.service";
+import { KeyboardService } from "../../../shared/data/keyboard.service";
 import { Command, CommandService } from "../../../shared/data/command.service";
-import { BlockService } from "../../data/block.service";
 
 @Component({
   selector: "app-outliner-entry",
@@ -181,13 +177,15 @@ import { BlockService } from "../../data/block.service";
 })
 export class OutlinerEntryComponent {
   entryService = inject(EntryService);
-  blockService = inject(BlockService);
   keyboardService = inject(KeyboardService);
   commandService = inject(CommandService);
 
   toRoundDate = new RoundDatePipe();
 
   entry = input.required<Entry>();
+  idx = input.required<number>();
+  isActive = input.required<boolean>();
+
   updatedEntry = model<Entry>({
     id: 0,
     parent: 0,
@@ -197,23 +195,11 @@ export class OutlinerEntryComponent {
     isDone: false,
   });
 
-  idx = input.required<number>();
-
   isMultiLine = signal(false);
 
   isDotHovered = signal(false);
   isMenuHovered = signal(false);
   isMenuOpen = computed(() => this.isDotHovered() || this.isMenuHovered());
-  isActive = computed(() => {
-    const isIdxActive = this.idx() === this.entryService.activeIdx();
-    const isParentBlockActive =
-      this.entry().parent === this.blockService.active.id;
-    return (
-      isIdxActive &&
-      isParentBlockActive &&
-      this.keyboardService.activeControlMode() !== ControlMode.INSERT_MODE
-    );
-  });
 
   indentArray: Signal<number[]> = computed(() => {
     return Array(this.entry().nesting)
