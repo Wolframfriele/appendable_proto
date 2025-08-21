@@ -172,10 +172,10 @@ pub async fn select_entry(db: &Database, entry_id: i64) -> Result<Entry> {
         nesting,
         text,
         show_todo,
-        is_done,
+        is_done
     FROM entries
     WHERE entries.entry_id = ?1;
-            ",
+        ",
     )
     .bind(entry_id)
     .fetch_one(&db.pool)
@@ -274,7 +274,7 @@ async fn insert_entry(db: &Database, entry: &Entry) -> Result<i64> {
         nesting,
         text,
         show_todo,
-        is_done,
+        is_done
     ) VALUES (
         ?1,
         ?2,

@@ -27,7 +27,11 @@ import { BlockService } from "../../data/block.service";
   imports: [CheckboxComponent, FormsModule, ContenteditableDirective],
   template: `
     <li>
-      <div class="text-elements-container" (click)="focusEntry()">
+      <div
+        class="text-elements-container"
+        (click)="focusEntry()"
+        [class.active]="isActive()"
+      >
         @for (number of indentArray(); track $index) {
           <span class="leading-line"></span>
         }
@@ -61,11 +65,7 @@ import { BlockService } from "../../data/block.service";
           }
         </div>
 
-        <div
-          class="text-container"
-          [class.active]="isActive()"
-          [style.max-width]="textWidth()"
-        >
+        <div class="text-container" [style.max-width]="textWidth()">
           @if (entry().showTodo) {
             <app-checkbox
               class="checkbox"
@@ -92,6 +92,7 @@ import { BlockService } from "../../data/block.service";
       justify-content: flex-start;
       align-items: stretch;
       gap: 0.5rem;
+      border-radius: 5px;
 
       .dot-container {
         width: 0.5rem;
@@ -252,6 +253,7 @@ export class OutlinerEntryComponent {
   //
 
   onFocusOut() {
+    console.log("Focus out");
     if (this.entry() !== this.updatedEntry()) {
       if (this.updatedEntry().id === 0) {
         this.entryService.add$.next(this.updatedEntry());

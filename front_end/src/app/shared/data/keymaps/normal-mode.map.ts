@@ -8,8 +8,7 @@ export const NormalModeMap = new Map<string, Command>([
   ["{", Command.MOVE_TO_PREVIOUS_CONTAINER],
   ["}", Command.MOVE_TO_NEXT_CONTAINER],
   ["Delete", Command.DELETE_SELECTED_BLOCK],
-  ["o", Command.ADD_NEW_CHILD_ENTRY],
+  ["o", Command.ADD_NEW_ENTRY],
   ["ArrowUp", Command.MOVE_TO_PREVIOUS_ELEMENT],
   ["ArrowDown", Command.MOVE_TO_NEXT_ELEMENT],
-  ["o", Command.ADD_NEW_CHILD_ENTRY],
 ]);

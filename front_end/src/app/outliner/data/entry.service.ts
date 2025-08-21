@@ -118,6 +118,9 @@ export class EntryService {
 
     this.commandService.executeCommand$.subscribe((command) => {
       switch (command) {
+        case Command.ADD_NEW_ENTRY:
+          this.add$.next(this.newEmptyEntry(this.blockService.active.id));
+          break;
         case Command.MOVE_TO_PREVIOUS_ELEMENT:
           if (
             this.navigationTargetService.active() == NavigationTarget.OUTLINER
