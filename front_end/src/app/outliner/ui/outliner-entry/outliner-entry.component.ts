@@ -274,6 +274,10 @@ export class OutlinerEntryComponent {
             return this.indentEntry();
           case Command.OUTDENT_ENTRY:
             return this.outdentEntry();
+          case Command.TOGGLE_TODO:
+            return this.toggleTodo();
+          case Command.TOGGLE_DONE:
+            return this.toggleDone();
         }
       });
   }
@@ -343,6 +347,18 @@ export class OutlinerEntryComponent {
   handleAddEntry() {
     if (this.isActive()) {
       this.updateEntryWhenDirty();
+    }
+  }
+
+  toggleTodo() {
+    if (this.isActive()) {
+      this.onTodoToggled();
+    }
+  }
+
+  toggleDone() {
+    if (this.isActive()) {
+      this.onCheckboxToggled(!this.entryModel().isDone);
     }
   }
 }

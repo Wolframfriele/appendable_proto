@@ -24,6 +24,8 @@ export enum Command {
   DELETE_ELEMENT = "crud: delete active entry",
   INDENT_ENTRY = "crud: indent entry",
   OUTDENT_ENTRY = "crud: outdent entry",
+  TOGGLE_TODO = "crud: toggle todo",
+  TOGGLE_DONE = "crud: toggle done",
 }
 
 @Injectable({
