@@ -21,6 +21,9 @@ export enum Command {
 
   ADD_NEW_ENTRY = "crud: add new entry",
   ADD_NEW_CHILD_ENTRY = "crud: add new child entry",
+  DELETE_ELEMENT = "crud: delete active entry",
+  INDENT_ENTRY = "crud: indent entry",
+  OUTDENT_ENTRY = "crud: outdent entry",
 }
 
 @Injectable({

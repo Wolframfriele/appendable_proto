@@ -225,7 +225,7 @@ pub async fn update_entry(db: &Database, entry: Entry) -> Result<Entry> {
         nesting=?3,
         text=?4,
         show_todo=?5,
-        is_done=?6,
+        is_done=?6
     WHERE entry_id=?1;
         ",
     )

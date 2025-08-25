@@ -2,20 +2,27 @@ import {
   Component,
   computed,
   effect,
+  ElementRef,
   inject,
   input,
   model,
   signal,
   Signal,
+  ViewChild,
 } from "@angular/core";
 import { CheckboxComponent } from "../checkbox/checkbox.component";
 import { FormsModule } from "@angular/forms";
 import { ContenteditableDirective } from "../../../model/contenteditable.model";
 import { Entry } from "../../../model/entry.model";
 import { EntryService } from "../../data/entry.service";
-import { RoundDatePipe } from "../../../pipes/round-date.pipe";
-import { KeyboardService } from "../../../shared/data/keyboard.service";
+import {
+  ControlMode,
+  KeyboardService,
+} from "../../../shared/data/keyboard.service";
 import { Command, CommandService } from "../../../shared/data/command.service";
+import { takeUntilDestroyed, toObservable } from "@angular/core/rxjs-interop";
+import { distinctUntilChanged, filter } from "rxjs";
+import { OutlinerStateService } from "../../data/outliner-state.service";
 
 @Component({
   selector: "app-outliner-entry",
@@ -26,7 +33,7 @@ import { Command, CommandService } from "../../../shared/data/command.service";
       <div
         class="text-elements-container"
         (click)="focusEntry()"
-        [class.active]="isActive()"
+        [class.active]="displayActive()"
       >
         @for (number of indentArray(); track $index) {
           <span class="leading-line"></span>
@@ -49,7 +56,7 @@ import { Command, CommandService } from "../../../shared/data/command.service";
             >
               <ul class="menu-items">
                 <li (click)="onTodoToggled()">
-                  @if (updatedEntry().showTodo) {
+                  @if (entryModel().showTodo) {
                     Hide todo
                   } @else {
                     Make todo
@@ -65,16 +72,17 @@ import { Command, CommandService } from "../../../shared/data/command.service";
           @if (entry().showTodo) {
             <app-checkbox
               class="checkbox"
-              [checked]="updatedEntry().isDone"
+              [checked]="entryModel().isDone"
               (checkedToggle)="onCheckboxToggled($event)"
             />
           }
           <div
+            #textBox
             [id]="entry().id"
             class="text"
             [class.done]="entry().isDone"
             [contentEditable]="true"
-            [(ngModel)]="updatedEntry().text"
+            [(ngModel)]="entryModel().text"
             contenteditableModel
           ></div>
         </div>
@@ -176,17 +184,19 @@ import { Command, CommandService } from "../../../shared/data/command.service";
   `,
 })
 export class OutlinerEntryComponent {
+  @ViewChild("textBox") textBox!: ElementRef<HTMLDivElement>;
+
   entryService = inject(EntryService);
   keyboardService = inject(KeyboardService);
   commandService = inject(CommandService);
-
-  toRoundDate = new RoundDatePipe();
+  outlinerState = inject(OutlinerStateService);
 
   entry = input.required<Entry>();
+  blockIdx = input.required<number>();
   idx = input.required<number>();
   isActive = input.required<boolean>();
 
-  updatedEntry = model<Entry>({
+  entryModel = model<Entry>({
     id: 0,
     parent: 0,
     nesting: 0,
@@ -200,9 +210,14 @@ export class OutlinerEntryComponent {
   isDotHovered = signal(false);
   isMenuHovered = signal(false);
   isMenuOpen = computed(() => this.isDotHovered() || this.isMenuHovered());
+  displayActive = computed(
+    () =>
+      this.isActive() &&
+      this.keyboardService.activeControlMode() !== ControlMode.INSERT_MODE,
+  );
 
   indentArray: Signal<number[]> = computed(() => {
-    return Array(this.entry().nesting)
+    return Array(this.entryModel().nesting)
       .fill(0)
       .map((_, i) => i);
   });
@@ -215,7 +230,7 @@ export class OutlinerEntryComponent {
 
   constructor() {
     effect(() =>
-      this.updatedEntry.set({
+      this.entryModel.set({
         id: this.entry().id,
         parent: this.entry().parent,
         nesting: this.entry().nesting,
@@ -224,48 +239,110 @@ export class OutlinerEntryComponent {
         isDone: this.entry().isDone,
       }),
     );
+
+    effect(() => {
+      if (
+        this.isActive() &&
+        this.keyboardService.activeControlMode() === ControlMode.INSERT_MODE
+      ) {
+        this.focusEntry();
+      }
+    });
+
+    this.commandService.executeCommand$
+      .pipe(takeUntilDestroyed())
+      .subscribe((command) => {
+        switch (command) {
+          case Command.ADD_NEW_ENTRY:
+            return this.handleAddEntry();
+        }
+      });
+
+    const becameInactive$ = toObservable(this.isActive).pipe(
+      distinctUntilChanged(),
+      filter((value) => value === false),
+    );
+
+    // should also happen when switching back from insert mode, and entry was active
+    becameInactive$.subscribe(() => this.updateEntryWhenDirty());
+
+    this.commandService.executeCommand$
+      .pipe(takeUntilDestroyed())
+      .subscribe((command) => {
+        switch (command) {
+          case Command.INDENT_ENTRY:
+            return this.indentEntry();
+          case Command.OUTDENT_ENTRY:
+            return this.outdentEntry();
+        }
+      });
+  }
+
+  get entryDirty(): boolean {
+    return JSON.stringify(this.entry()) !== JSON.stringify(this.entryModel());
   }
 
   focusEntry() {
-    const textBox = document.getElementById(this.entry().id.toString());
-    textBox?.focus();
+    console.log(`Focus entry: ${this.entry().id}`);
+    setTimeout(() => {
+      this.textBox.nativeElement.focus();
+    });
     this.commandService.executeCommand$.next(Command.SWITCH_TO_INSERT_MODE);
-    // this.entryService.activateEntryById(this.entry().id);
+    this.outlinerState.activeBlockIdx.set(this.blockIdx());
+    this.outlinerState.activeEntryIdx.set(this.idx());
   }
 
-  // figure out how to get an onBecomesActive event and
-  // onLosesActive event
-  // Then move the logic in onFocusOut to onLosesActive
-  //
-
-  onFocusOut() {
-    console.log("Focus out");
-    if (this.entry() !== this.updatedEntry()) {
-      if (this.updatedEntry().id === 0) {
-        this.entryService.add$.next(this.updatedEntry());
+  updateEntryWhenDirty() {
+    if (this.entryDirty) {
+      if (this.entryModel().id === 0) {
+        this.entryService.add$.next(this.entryModel());
       } else {
-        this.entryService.edit$.next(this.updatedEntry());
+        this.entryService.edit$.next(this.entryModel());
       }
     }
   }
 
   onCheckboxToggled(newValue: boolean) {
     console.log(`Toggle checkbox or entry ${this.entry().id} to ${newValue}`);
-    this.updatedEntry.update((entry) => ({ ...entry, isDone: newValue }));
-    this.entryService.edit$.next(this.updatedEntry());
+    this.entryModel.update((entry) => ({ ...entry, isDone: newValue }));
+    this.entryService.edit$.next(this.entryModel());
   }
 
   onTodoToggled() {
     console.log(`Toggle todo for entry: ${this.entry().id}`);
-    this.updatedEntry.update((entry) => ({
+    this.entryModel.update((entry) => ({
       ...entry,
       showTodo: !entry.showTodo,
     }));
-    this.entryService.edit$.next(this.updatedEntry());
+    this.entryService.edit$.next(this.entryModel());
   }
 
   onDeleteEntry() {
     console.log(`Deleting entry: ${this.entry().id}`);
     this.entryService.remove$.next({ id: this.entry().id });
+  }
+
+  indentEntry() {
+    if (this.isActive()) {
+      this.entryModel.update((entry) => ({
+        ...entry,
+        nesting: entry.nesting + 1,
+      }));
+    }
+  }
+
+  outdentEntry() {
+    if (this.isActive() && this.entryModel().nesting > 0) {
+      this.entryModel.update((entry) => ({
+        ...entry,
+        nesting: entry.nesting - 1,
+      }));
+    }
+  }
+
+  handleAddEntry() {
+    if (this.isActive()) {
+      this.updateEntryWhenDirty();
+    }
   }
 }

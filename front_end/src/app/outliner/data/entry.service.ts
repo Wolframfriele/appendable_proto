@@ -4,14 +4,17 @@ import {
   catchError,
   concatMap,
   EMPTY,
+  filter,
   map,
   merge,
+  Observable,
   startWith,
   Subject,
   switchMap,
+  take,
 } from "rxjs";
 import { HttpClient, HttpHeaders } from "@angular/common/http";
-import { takeUntilDestroyed } from "@angular/core/rxjs-interop";
+import { takeUntilDestroyed, toObservable } from "@angular/core/rxjs-interop";
 import { Entry, RemoveEntry } from "../../model/entry.model";
 import { mapToEntries, mapToJsonEntry } from "../../model/entry.mapper";
 import { EntryJson } from "../../model/entry.interface";
@@ -50,10 +53,13 @@ export class EntryService {
   edit$ = new Subject<Entry>();
   remove$ = new Subject<RemoveEntry>();
 
+  private reloaded$ = new Subject<void>();
+
   constructor() {
     const entryAdded$ = this.add$.pipe(
       concatMap((addEntry) => {
-        console.log(`New entry: with text: ${addEntry.text}`);
+        console.log(`New entry`);
+        this.state.update((state) => ({ ...state, loaded: false }));
         return this.http
           .post(`/api/entries`, mapToJsonEntry(addEntry), this.AS_JSON_HEADERS)
           .pipe(catchError((err) => this.handleError(err)));
@@ -63,6 +69,7 @@ export class EntryService {
     const entryEdited$ = this.edit$.pipe(
       concatMap((editEntry) => {
         console.log(`Edit entry: ${editEntry.id}`);
+        this.state.update((state) => ({ ...state, loaded: false }));
         return this.http
           .put(
             `/api/entries/${editEntry.id}`,
@@ -76,6 +83,7 @@ export class EntryService {
     const entryRemoved$ = this.remove$.pipe(
       concatMap((removeEntry) => {
         console.log(`Removing entry: ${removeEntry.id}`);
+        this.state.update((state) => ({ ...state, loaded: false }));
         return this.http
           .delete(`/api/entries/${removeEntry.id}`)
           .pipe(catchError((err) => this.handleError(err)));
@@ -102,12 +110,25 @@ export class EntryService {
         takeUntilDestroyed(),
       )
       .subscribe((entries) => {
+        console.log("Updated the state");
         this.state.update((state) => ({
           ...state,
           entries,
           loaded: true,
         }));
+
+        this.reloaded$.next();
       });
+  }
+
+  public awaitAdd(entry: Entry): Observable<void> {
+    this.add$.next(entry);
+    return this.waitUntilReloaded();
+  }
+
+  public awaitRemove(removeEntry: RemoveEntry): Observable<void> {
+    this.remove$.next(removeEntry);
+    return this.waitUntilReloaded();
   }
 
   private groupEntriesByParent(entries: Entry[]): Map<number, Entry[]> {
@@ -125,5 +146,9 @@ export class EntryService {
   private handleError(err: any) {
     this.state.update((state) => ({ ...state, error: err }));
     return EMPTY;
+  }
+
+  private waitUntilReloaded(): Observable<void> {
+    return this.reloaded$.asObservable().pipe(take(1));
   }
 }

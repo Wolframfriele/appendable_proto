@@ -6,6 +6,9 @@ import { OutlinerBlockComponent } from "./ui/outliner-block/outliner-block.compo
 import { Command, CommandService } from "../shared/data/command.service";
 import { Block } from "../model/block.model";
 import { EntryService } from "./data/entry.service";
+import { OutlinerStateService } from "./data/outliner-state.service";
+import { takeUntilDestroyed } from "@angular/core/rxjs-interop";
+import { Entry } from "../model/entry.model";
 
 @Component({
   selector: "app-outliner",
@@ -19,9 +22,10 @@ import { EntryService } from "./data/entry.service";
 
       <app-outliner-block
         [block]="block"
+        [blockIdx]="idx"
         [entriesForBlock]="findEntriesForBlock(block)"
         [active]="blockIsActive(idx)"
-        [activeEntry]="activeEntryIdx()"
+        [activeEntry]="state.activeEntryIdx()"
       />
     }
 
@@ -48,41 +52,35 @@ export default class OutlinerComponent {
   blockService = inject(BlockService);
   entryService = inject(EntryService);
   commandService = inject(CommandService);
-
-  activeBlockIdx = signal(0);
-  activeEntryIdx = signal(0);
+  state = inject(OutlinerStateService);
 
   constructor() {
-    this.commandService.executeCommand$.subscribe((command) => {
-      switch (command) {
-        case Command.ADD_NEW:
-          this.addNewBlock();
-          break;
-        case Command.DELETE_SELECTED_BLOCK:
-          this.deleteActiveBlock();
-          break;
-        case Command.END_SELECTED_BLOCK:
-          this.endActiveBlock();
-          break;
-        case Command.ADD_NEW_ENTRY:
-          this.addNewEntry();
-          break;
-        case Command.MOVE_TO_PREVIOUS_ELEMENT:
-          this.activatePreviousEntry();
-          break;
-        case Command.MOVE_TO_NEXT_ELEMENT:
-          this.activateNextEntry();
-          break;
-        case Command.MOVE_TO_PREVIOUS_CONTAINER:
-          this.activatePreviousBlock();
-          this.activeEntryIdx.set(0);
-          break;
-        case Command.MOVE_TO_NEXT_CONTAINER:
-          this.activateNextBlock();
-          this.activeEntryIdx.set(0);
-          break;
-      }
-    });
+    this.commandService.executeCommand$
+      .pipe(takeUntilDestroyed())
+      .subscribe((command) => {
+        switch (command) {
+          case Command.ADD_NEW:
+            return this.addNewBlock();
+          case Command.DELETE_SELECTED_BLOCK:
+            return this.deleteActiveBlock();
+          case Command.END_SELECTED_BLOCK:
+            return this.endActiveBlock();
+          case Command.ADD_NEW_ENTRY:
+            return this.addNewEntry();
+          case Command.DELETE_ELEMENT:
+            return this.deleteActiveEntry();
+          case Command.MOVE_TO_PREVIOUS_ELEMENT:
+            return this.activatePreviousEntry();
+          case Command.MOVE_TO_NEXT_ELEMENT:
+            return this.activateNextEntry();
+          case Command.MOVE_TO_PREVIOUS_CONTAINER:
+            this.activatePreviousBlock();
+            return this.state.activeEntryIdx.set(0);
+          case Command.MOVE_TO_NEXT_CONTAINER:
+            this.activateNextBlock();
+            return this.state.activeEntryIdx.set(0);
+        }
+      });
   }
 
   get blocks() {
@@ -94,7 +92,15 @@ export default class OutlinerComponent {
   }
 
   get activeBlock(): Block {
-    return this.blocks[this.activeBlockIdx()];
+    return this.blocks[this.state.activeBlockIdx()];
+  }
+
+  get activeEntry(): Entry | undefined {
+    const entriesForActiveBlock = this.entries.get(this.activeBlock.id);
+    if (entriesForActiveBlock) {
+      return entriesForActiveBlock[this.state.activeEntryIdx()];
+    }
+    return undefined;
   }
 
   previousBlockIsDifferentDate(idx: number) {
@@ -107,7 +113,7 @@ export default class OutlinerComponent {
   }
 
   blockIsActive(idx: number): boolean {
-    if (idx === this.activeBlockIdx()) {
+    if (idx === this.state.activeBlockIdx()) {
       return true;
     }
     return false;
@@ -117,23 +123,23 @@ export default class OutlinerComponent {
     return value.toISOString().split("T")[0];
   }
 
-  setActive(idx: number) {
+  setActiveBlock(idx: number) {
     if (idx >= 0 && idx <= this.blocks.length) {
-      this.activeBlockIdx.set(idx);
+      this.state.activeBlockIdx.set(idx);
     }
   }
 
   activatePreviousBlock(): boolean {
-    if (this.activeBlockIdx() > 0) {
-      this.activeBlockIdx.update((current) => current - 1);
+    if (this.state.activeBlockIdx() > 0) {
+      this.state.activeBlockIdx.update((current) => current - 1);
       return true;
     }
     return false;
   }
 
   activateNextBlock(): boolean {
-    if (this.activeBlockIdx() < this.blocks.length - 1) {
-      this.activeBlockIdx.update((current) => current + 1);
+    if (this.state.activeBlockIdx() < this.blocks.length - 1) {
+      this.state.activeBlockIdx.update((current) => current + 1);
       return true;
     }
     return false;
@@ -150,7 +156,7 @@ export default class OutlinerComponent {
       duration: 0,
       tags: [],
     });
-    this.setActive(0);
+    this.setActiveBlock(0);
   }
 
   private deleteActiveBlock() {
@@ -164,22 +170,48 @@ export default class OutlinerComponent {
   }
 
   private addNewEntry() {
-    this.entryService.add$.next({
-      id: 0,
-      parent: this.activeBlock.id,
-      nesting: 0,
-      text: "",
-      showTodo: false,
-      isDone: false,
-    });
+    this.entryService
+      .awaitAdd({
+        id: 0,
+        parent: this.activeBlock.id,
+        nesting: 0,
+        text: "",
+        showTodo: false,
+        isDone: false,
+      })
+      .subscribe(() => {
+        const entriesInBlock = this.entries.get(this.activeBlock.id);
+        if (entriesInBlock && entriesInBlock.length > 0) {
+          this.state.activeEntryIdx.set(entriesInBlock.length - 1);
+        }
+        this.commandService.executeCommand$.next(Command.SWITCH_TO_INSERT_MODE);
+      });
+  }
+
+  private deleteActiveEntry() {
+    const activeEntry = this.activeEntry;
+    const entriesInBlock = this.entries.get(this.activeBlock.id);
+    let activeEntryIsLastInBlock = false;
+    if (
+      entriesInBlock &&
+      this.state.activeEntryIdx() === entriesInBlock.length - 1
+    ) {
+      activeEntryIsLastInBlock = true;
+    }
+    if (activeEntry) {
+      this.entryService.remove$.next({ id: activeEntry.id });
+      if (activeEntryIsLastInBlock) {
+        this.state.activeEntryIdx.update((current) => current - 1);
+      }
+    }
   }
 
   private activatePreviousEntry() {
-    if (this.activeEntryIdx() > 0) {
-      this.activeEntryIdx.update((current) => current - 1);
+    if (this.state.activeEntryIdx() > 0) {
+      this.state.activeEntryIdx.update((current) => current - 1);
     } else {
       if (this.activatePreviousBlock()) {
-        this.activeEntryIdx.set(this.getLastEntryIdxOfBlock());
+        this.state.activeEntryIdx.set(this.getLastEntryIdxOfBlock());
       }
     }
   }
@@ -190,12 +222,12 @@ export default class OutlinerComponent {
     )?.length;
     if (
       amountOfEntriesForBlock &&
-      this.activeEntryIdx() < amountOfEntriesForBlock - 1
+      this.state.activeEntryIdx() < amountOfEntriesForBlock - 1
     ) {
-      this.activeEntryIdx.update((current) => current + 1);
+      this.state.activeEntryIdx.update((current) => current + 1);
     } else {
       if (this.activateNextBlock()) {
-        this.activeEntryIdx.set(0);
+        this.state.activeEntryIdx.set(0);
       }
     }
   }

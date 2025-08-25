@@ -1,7 +1,6 @@
 import { Component, effect, inject, input, model } from "@angular/core";
 import { Block } from "../../../model/block.model";
 import { BlockInfoComponent } from "../block-info/block-info.component";
-import { RouterLink } from "@angular/router";
 import { EntryService } from "../../data/entry.service";
 import { OutlinerEntryComponent } from "../outliner-entry/outliner-entry.component";
 import { DisplayTimePipe } from "../../../pipes/display-time.pipe";
@@ -12,12 +11,7 @@ import { Entry } from "../../../model/entry.model";
 @Component({
   standalone: true,
   selector: "app-outliner-block",
-  imports: [
-    BlockInfoComponent,
-    OutlinerEntryComponent,
-    RouterLink,
-    DisplayTimePipe,
-  ],
+  imports: [BlockInfoComponent, OutlinerEntryComponent, DisplayTimePipe],
   host: {
     "[class.active]": "active()",
   },
@@ -37,6 +31,7 @@ import { Entry } from "../../../model/entry.model";
             @for (entry of entriesForBlock(); track idx; let idx = $index) {
               <app-outliner-entry
                 [entry]="entry"
+                [blockIdx]="blockIdx()"
                 [idx]="idx"
                 [isActive]="entryIsActive(idx)"
               />
@@ -111,6 +106,7 @@ import { Entry } from "../../../model/entry.model";
 })
 export class OutlinerBlockComponent {
   block = input.required<Block>();
+  blockIdx = input.required<number>();
   entriesForBlock = input<Entry[] | undefined>(undefined);
   active = input(false);
   activeEntry = input<number>(0);

@@ -39,6 +39,7 @@ export class KeyboardService {
           this.state.set({ activeControlMode: ControlMode.NORMAL_MODE });
           break;
         case Command.SWITCH_TO_INSERT_MODE:
+          console.log("Handeling switching to input mode");
           this.state.set({ activeControlMode: ControlMode.INSERT_MODE });
           break;
         case Command.SWITCH_TO_VISUAL_MODE:
@@ -53,10 +54,11 @@ export class KeyboardService {
     });
 
     this.keyboard$.subscribe((keyEvent) => {
-      console.log(keyEvent.key);
+      const keyCombo = this.keyComboStringFromKeyEvent(keyEvent);
+      console.log(keyCombo);
       switch (this.activeControlMode()) {
         case ControlMode.NORMAL_MODE:
-          const normalKeymapping = NormalModeMap.get(keyEvent.key);
+          const normalKeymapping = NormalModeMap.get(keyCombo);
           if (normalKeymapping) {
             keyEvent.preventDefault();
             this.commandService.executeCommand$.next(normalKeymapping);
@@ -64,7 +66,7 @@ export class KeyboardService {
           break;
 
         case ControlMode.INSERT_MODE:
-          const insertKeymapping = InsertModeMap.get(keyEvent.key);
+          const insertKeymapping = InsertModeMap.get(keyCombo);
           if (insertKeymapping) {
             keyEvent.preventDefault();
             this.commandService.executeCommand$.next(insertKeymapping);
@@ -72,7 +74,7 @@ export class KeyboardService {
           break;
 
         case ControlMode.VISUAL_MODE:
-          const visualKeymapping = VisualModeMap.get(keyEvent.key);
+          const visualKeymapping = VisualModeMap.get(keyCombo);
           if (visualKeymapping) {
             keyEvent.preventDefault();
             this.commandService.executeCommand$.next(visualKeymapping);
@@ -80,7 +82,7 @@ export class KeyboardService {
           break;
 
         case ControlMode.COMMAND_MODE:
-          const commandKeymapping = CommandModeMap.get(keyEvent.key);
+          const commandKeymapping = CommandModeMap.get(keyCombo);
           if (commandKeymapping) {
             keyEvent.preventDefault();
             this.commandService.executeCommand$.next(commandKeymapping);
@@ -88,5 +90,22 @@ export class KeyboardService {
           break;
       }
     });
+  }
+
+  keyComboStringFromKeyEvent(keyEvent: KeyboardEvent): string {
+    let result = "";
+    if (keyEvent.metaKey) {
+      result = result.concat("Meta+");
+    }
+    if (keyEvent.shiftKey) {
+      result = result.concat("Shift+");
+    }
+    if (keyEvent.ctrlKey) {
+      result = result.concat("Ctrl+");
+    }
+    if (keyEvent.altKey) {
+      result = result.concat("Alt+");
+    }
+    return result.concat(keyEvent.key);
   }
 }
