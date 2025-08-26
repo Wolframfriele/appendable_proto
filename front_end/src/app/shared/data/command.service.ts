@@ -26,6 +26,8 @@ export enum Command {
   OUTDENT_ENTRY = "crud: outdent entry",
   TOGGLE_TODO = "crud: toggle todo",
   TOGGLE_DONE = "crud: toggle done",
+
+  LOGOUT = "auth: logout",
 }
 
 @Injectable({

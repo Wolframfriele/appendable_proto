@@ -2,6 +2,7 @@ import { computed, inject, Injectable, signal } from "@angular/core";
 import { Router } from "@angular/router";
 import { Subject } from "rxjs";
 import { Command, CommandService } from "../../shared/data/command.service";
+import { takeUntilDestroyed } from "@angular/core/rxjs-interop";
 
 interface AuthState {
   isAuthenticated: boolean;
@@ -27,10 +28,7 @@ export class AuthService {
 
   constructor() {
     this.login$.subscribe((password) => {
-      console.log("Login");
-      console.log(password);
-      if (password === "welkom") {
-        console.log("approved");
+      if (password === "test") {
         this.state.set({
           isAuthenticated: true,
           error: null,
@@ -44,5 +42,22 @@ export class AuthService {
         });
       }
     });
+
+    this.commandService.executeCommand$
+      .pipe(takeUntilDestroyed())
+      .subscribe((command) => {
+        switch (command) {
+          case Command.LOGOUT:
+            return this.logout();
+        }
+      });
+  }
+
+  logout() {
+    this.state.set({
+      isAuthenticated: false,
+      error: null,
+    });
+    this.router.navigateByUrl("/login");
   }
 }
