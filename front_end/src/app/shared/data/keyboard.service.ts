@@ -39,7 +39,6 @@ export class KeyboardService {
           this.state.set({ activeControlMode: ControlMode.NORMAL_MODE });
           break;
         case Command.SWITCH_TO_INSERT_MODE:
-          console.log("Handeling switching to input mode");
           this.state.set({ activeControlMode: ControlMode.INSERT_MODE });
           break;
         case Command.SWITCH_TO_VISUAL_MODE:

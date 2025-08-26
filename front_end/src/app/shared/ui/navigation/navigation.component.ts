@@ -23,6 +23,13 @@ import { Command, CommandService } from "../../data/command.service";
         >
           Projects
         </li>
+        <li
+          routerLink="/login"
+          routerLinkActive="active-link"
+          [routerLinkActiveOptions]="{ exact: true }"
+        >
+          login
+        </li>
       </ul>
     </div>
   `,

@@ -19,7 +19,7 @@ import { Entry, RemoveEntry } from "../../model/entry.model";
 import { mapToEntries, mapToJsonEntry } from "../../model/entry.mapper";
 import { EntryJson } from "../../model/entry.interface";
 
-export interface EntryState {
+interface EntryState {
   entries: Map<number, Entry[]>;
   loaded: boolean;
   error: String | null;

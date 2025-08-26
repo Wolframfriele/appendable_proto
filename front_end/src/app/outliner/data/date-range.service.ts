@@ -28,8 +28,9 @@ export class DateRangeService {
 
   start = computed(() => this.state().start);
   end = computed(() => this.state().end);
+  error = computed(() => this.state().error);
 
-  expand$ = new Subject<undefined>();
+  expand$ = new Subject<void>();
 
   dateRangeExpanded$ = toObservable(this.state);
 
