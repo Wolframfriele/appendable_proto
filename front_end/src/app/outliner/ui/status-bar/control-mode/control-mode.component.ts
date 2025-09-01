@@ -1,8 +1,9 @@
-import { Component, inject } from '@angular/core';
-import { KeyboardService } from '../../../../shared/data/keyboard.service';
+import { Component, inject } from "@angular/core";
+import { KeyboardService } from "../../../../shared/data/keyboard.service";
 
 @Component({
-  selector: 'app-control-mode',
+  selector: "app-control-mode",
+  standalone: true,
   imports: [],
   template: `
     <span class="control-mode">
@@ -13,7 +14,7 @@ import { KeyboardService } from '../../../../shared/data/keyboard.service';
     .control-mode {
       margin: 0.5rem;
     }
-  `
+  `,
 })
 export class ControlModeComponent {
   keyboardService = inject(KeyboardService);

@@ -11,6 +11,7 @@ export enum ControlMode {
   INSERT_MODE = "Insert",
   VISUAL_MODE = "Visual",
   COMMAND_MODE = "Command",
+  DEFAULT_MODE = "Default",
 }
 
 interface State {
@@ -33,9 +34,10 @@ export class KeyboardService {
 
   constructor() {
     this.commandService.executeCommand$.subscribe((command) => {
+      console.log(command);
       switch (command) {
         case Command.SWITCH_TO_NORMAL_MODE:
-          (document.activeElement as HTMLElement).blur(); // remove focus
+          (document.activeElement as HTMLElement).blur();
           this.state.set({ activeControlMode: ControlMode.NORMAL_MODE });
           break;
         case Command.SWITCH_TO_INSERT_MODE:
@@ -48,6 +50,9 @@ export class KeyboardService {
         case Command.SWITCH_TO_COMMAND_MODE:
           (document.activeElement as HTMLElement).blur();
           this.state.set({ activeControlMode: ControlMode.COMMAND_MODE });
+          break;
+        case Command.SWITCH_TO_DEFAULT_MODE:
+          this.state.set({ activeControlMode: ControlMode.DEFAULT_MODE });
           break;
       }
     });

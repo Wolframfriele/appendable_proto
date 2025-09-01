@@ -9,7 +9,7 @@ import {
 import { ProjectsComponent } from "./projects/projects.component";
 import OutlinerComponent from "./outliner/outliner.component";
 import { LoginComponent } from "./auth/login/login.component";
-import { inject, Inject } from "@angular/core";
+import { inject } from "@angular/core";
 import { AuthService } from "./auth/data/auth.service";
 
 export const authGuard: CanActivateFn = (
@@ -19,7 +19,7 @@ export const authGuard: CanActivateFn = (
   const authService = inject(AuthService);
   const router = inject(Router);
 
-  if (!authService.isAuthenticated()) {
+  if (!authService.isLoggedIn()) {
     const loginPath = router.parseUrl("/login");
     return new RedirectCommand(loginPath, {
       skipLocationChange: true,

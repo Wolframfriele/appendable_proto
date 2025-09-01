@@ -1,63 +1,116 @@
-import { computed, inject, Injectable, signal } from "@angular/core";
-import { Router } from "@angular/router";
-import { Subject } from "rxjs";
+import { Injectable, signal, computed, inject } from "@angular/core";
+import { HttpClient } from "@angular/common/http";
+import { Observable, merge, EMPTY, Subject, of } from "rxjs";
+import {
+  catchError,
+  filter,
+  map,
+  shareReplay,
+  skip,
+  startWith,
+  switchMap,
+  take,
+  tap,
+} from "rxjs/operators";
+import {
+  AuthResponse,
+  AuthResponseJson,
+  toOptionalAuthResponse,
+} from "../../auth/data/auth-response.model";
+import {
+  AuthPayload,
+  mapToAuthPayloadJson,
+} from "../../auth/data/auth-payload.model";
 import { Command, CommandService } from "../../shared/data/command.service";
-import { takeUntilDestroyed } from "@angular/core/rxjs-interop";
-
-interface AuthState {
-  isAuthenticated: boolean;
-  error: string | null;
-}
+import { Router } from "@angular/router";
 
 @Injectable({
   providedIn: "root",
 })
 export class AuthService {
-  router = inject(Router);
-  commandService = inject(CommandService);
+  private http = inject(HttpClient);
+  private router = inject(Router);
+  private commandService = inject(CommandService);
 
-  state = signal<AuthState>({
-    isAuthenticated: false,
-    error: null,
-  });
+  readonly session = signal<AuthResponse | null>(null);
+  readonly isLoggedIn = computed(() => this.session() !== null);
+  readonly error = signal<string | null>(null);
 
-  isAuthenticated = computed(() => this.state().isAuthenticated);
-  error = computed(() => this.state().error);
+  private checkSession$ = new Subject<void>();
+  private login$ = new Subject<AuthPayload>();
+  private logout$ = new Subject<void>();
 
-  login$ = new Subject<string>();
-
-  constructor() {
-    this.login$.subscribe((password) => {
-      if (password === "test") {
-        this.state.set({
-          isAuthenticated: true,
-          error: null,
-        });
+  private session$: Observable<AuthResponse | null> = merge(
+    this.checkSession$.pipe(
+      startWith(undefined),
+      switchMap(() =>
+        this.http
+          .get<AuthResponseJson>("/api/session")
+          .pipe(catchError(() => of(null))),
+      ),
+      map(toOptionalAuthResponse),
+    ),
+    this.login$.pipe(
+      switchMap((authPayload) =>
+        this.http
+          .post<AuthResponseJson>(
+            "/api/login",
+            mapToAuthPayloadJson(authPayload),
+          )
+          .pipe(
+            catchError((err) => {
+              this.error.set(err.error.error);
+              return of(null);
+            }),
+          ),
+      ),
+      map(toOptionalAuthResponse),
+    ),
+    merge(
+      this.logout$,
+      this.commandService.executeCommand$.pipe(
+        filter((c) => c === Command.LOGOUT),
+        map(() => null),
+      ),
+    ).pipe(
+      switchMap(() =>
+        this.http
+          .get<AuthResponseJson>("/api/logout")
+          // return EMPTY to not update the current session, sinc the logout did not succeed
+          // this also avoids the redirects
+          .pipe(catchError(() => EMPTY)),
+      ),
+      map(() => null),
+    ),
+  ).pipe(
+    tap((auth) => {
+      if (auth) {
         this.commandService.executeCommand$.next(Command.SWITCH_TO_NORMAL_MODE);
         this.router.navigateByUrl("/");
+        this.error.set(null);
       } else {
-        this.state.set({
-          isAuthenticated: false,
-          error: "Incorrect password",
-        });
+        this.commandService.executeCommand$.next(
+          Command.SWITCH_TO_DEFAULT_MODE,
+        );
+        this.router.navigateByUrl("/login");
       }
-    });
+      return auth;
+    }),
+    shareReplay(1),
+  );
 
-    this.commandService.executeCommand$
-      .pipe(takeUntilDestroyed())
-      .subscribe((command) => {
-        switch (command) {
-          case Command.LOGOUT:
-            return this.logout();
-        }
-      });
+  constructor() {
+    this.session$.subscribe(this.session.set);
+  }
+
+  login(username: string, password: string) {
+    this.login$.next({ clientId: username, clientSecret: password });
+    // why does this method seem to return two events? Or where is the second log coming from?
+    return this.session$.pipe(skip(1), take(1));
   }
 
   logout() {
-    this.state.set({
-      isAuthenticated: false,
-      error: null,
-    });
-    this.router.navigateByUrl("/login");
+    this.logout$.next();
+    return this.session$.pipe(skip(1), take(1));
   }
 }

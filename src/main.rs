@@ -1,17 +1,20 @@
+use anyhow::{anyhow, Error};
 use axum::{
-    extract::{Path, Query, State},
-    http::StatusCode,
+    extract::{MatchedPath, Path, Query, State},
+    http::{Request, StatusCode},
     response::{IntoResponse, Response},
     routing::{get, post, put},
     Json, Router,
 };
-
-use anyhow::{anyhow, Error};
 use chrono::{DateTime, Utc};
 use serde::Deserialize;
 use std::sync::Arc;
+use tower_http::trace::TraceLayer;
+use tracing::info_span;
+use tracing_subscriber::{layer::SubscriberExt, util::SubscriberInitExt};
 
 use track_proto::{
+    auth::{get_session, login, logout, Claims},
     database::{
         delete_blocks, insert_new_block, insert_new_project, select_blocks, select_entries,
         select_projects, update_block,
@@ -25,11 +28,25 @@ use track_proto::database::{
 
 #[tokio::main]
 async fn main() {
-    println!("Started track server on http://localhost:3000");
+    tracing_subscriber::registry()
+        .with(
+            tracing_subscriber::EnvFilter::try_from_default_env().unwrap_or_else(|_| {
+                format!(
+                    "{}=info,tower_http=info,axum::rejection=trace",
+                    env!("CARGO_CRATE_NAME")
+                )
+                .into()
+            }),
+        )
+        .with(tracing_subscriber::fmt::layer())
+        .init();
 
     let state = Arc::new(Database::new().await.unwrap());
 
     let app = Router::new()
+        .route("/api/login", post(login))
+        .route("/api/session", get(get_session))
+        .route("/api/logout", get(logout))
         .route("/api/blocks", get(get_blocks).post(post_block))
         .route(
             "/api/blocks/{block_id}",
@@ -47,9 +64,24 @@ async fn main() {
             get(get_first_block_timestamp_before),
         )
         .fallback(handler_404)
+        .layer(
+            TraceLayer::new_for_http().make_span_with(|request: &Request<_>| {
+                let matched_path = request
+                    .extensions()
+                    .get::<MatchedPath>()
+                    .map(MatchedPath::as_str);
+
+                info_span!(
+                    "http_request",
+                    method = ?request.method(),
+                    matched_path,
+                )
+            }),
+        )
         .with_state(state);
 
     let listener = tokio::net::TcpListener::bind("0.0.0.0:3000").await.unwrap();
+    tracing::info!("server listening on {}", listener.local_addr().unwrap());
     axum::serve(listener, app).await.unwrap();
 }
 
@@ -60,6 +92,7 @@ struct RangeParams {
 }
 
 async fn get_blocks(
+    _: Claims,
     params: Query<RangeParams>,
     db: State<Arc<Database>>,
 ) -> Result<Json<Vec<Block>>, NotFoundError> {
@@ -78,6 +111,7 @@ async fn get_blocks(
 }
 
 async fn delete_block_api(
+    _: Claims,
     Path(block_id): Path<i64>,
     db: State<Arc<Database>>,
 ) -> impl IntoResponse {
@@ -90,6 +124,7 @@ async fn delete_block_api(
 }
 
 async fn post_block(
+    _: Claims,
     db: State<Arc<Database>>,
     axum::extract::Json(payload): axum::extract::Json<Block>,
 ) -> Result<Json<Block>, BadRequestError> {
@@ -97,6 +132,7 @@ async fn post_block(
 }
 
 async fn put_block(
+    _: Claims,
     Path(block_id): Path<i64>,
     db: State<Arc<Database>>,
     axum::extract::Json(payload): axum::extract::Json<Block>,
@@ -111,6 +147,7 @@ async fn put_block(
 }
 
 async fn get_entries(
+    _: Claims,
     params: Query<RangeParams>,
     db: State<Arc<Database>>,
 ) -> Result<Json<Vec<Entry>>, NotFoundError> {
@@ -129,6 +166,7 @@ async fn get_entries(
 }
 
 async fn post_entry(
+    _: Claims,
     db: State<Arc<Database>>,
     axum::extract::Json(payload): axum::extract::Json<Entry>,
 ) -> Result<Json<Entry>, BadRequestError> {
@@ -136,6 +174,7 @@ async fn post_entry(
 }
 
 async fn put_entry(
+    _: Claims,
     Path(entry_id): Path<i64>,
     db: State<Arc<Database>>,
     axum::extract::Json(payload): axum::extract::Json<Entry>,
@@ -155,6 +194,7 @@ struct DeleteEntriesParams {
 }
 
 async fn delete_entry_api(
+    _: Claims,
     Path(entry_id): Path<i64>,
     params: Query<DeleteEntriesParams>,
     db: State<Arc<Database>>,
@@ -171,6 +211,7 @@ async fn delete_entry_api(
 }
 
 async fn get_first_block_timestamp_before(
+    _: Claims,
     Path(last_data): Path<DateTime<Utc>>,
     db: State<Arc<Database>>,
 ) -> Result<Json<NextDataResponse>, BadRequestError> {
@@ -180,12 +221,16 @@ async fn get_first_block_timestamp_before(
     ))
 }
 
-async fn get_projects(db: State<Arc<Database>>) -> Result<Json<Vec<Project>>, BadRequestError> {
+async fn get_projects(
+    _: Claims,
+    db: State<Arc<Database>>,
+) -> Result<Json<Vec<Project>>, BadRequestError> {
     println!("Get projects");
     Ok(Json(select_projects(&db).await?))
 }
 
 async fn post_projects(
+    _: Claims,
     db: State<Arc<Database>>,
     axum::extract::Json(payload): axum::extract::Json<Project>,
 ) -> Result<Json<Project>, BadRequestError> {

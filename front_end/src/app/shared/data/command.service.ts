@@ -6,6 +6,7 @@ export enum Command {
   SWITCH_TO_INSERT_MODE = "navigation: switch to insert mode",
   SWITCH_TO_VISUAL_MODE = "navigation: switch to visual mode",
   SWITCH_TO_COMMAND_MODE = "navigation: switch to command mode",
+  SWITCH_TO_DEFAULT_MODE = "navigation: switch to default mode",
 
   GO_TO_OUTLINER = "navigation: go to outliner",
   GO_TO_PROJECTS = "navigation: go to projects",
