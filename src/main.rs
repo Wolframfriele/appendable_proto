@@ -13,7 +13,7 @@ use tower_http::trace::TraceLayer;
 use tracing::info_span;
 use tracing_subscriber::{layer::SubscriberExt, util::SubscriberInitExt};
 
-use track_proto::{
+use appendable_proto::{
     auth::{get_session, login, logout, Claims},
     database::{
         delete_blocks, insert_new_block, insert_new_project, select_blocks, select_entries,
@@ -22,7 +22,7 @@ use track_proto::{
     models::{Block, Entry, NextDataResponse, Project},
 };
 
-use track_proto::database::{
+use appendable_proto::database::{
     delete_entry, insert_new_entry, select_earlier_timestamp, update_entry, Database,
 };
 

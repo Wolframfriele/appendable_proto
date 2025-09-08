@@ -1,5 +1,5 @@
 [package]
-name = "track_proto"
+name = "appendable_proto"
 version = "0.1.0"
 edition = "2021"
 
@@ -30,3 +30,6 @@ tracing-subscriber = { version = "0.3", features = ["env-filter"] }
 rand = "0.9"
 jsonwebtoken = "9"
 cookie = "0.18"
+
+[profile.dev.package.sqlx-macros]
+opt-level = 3

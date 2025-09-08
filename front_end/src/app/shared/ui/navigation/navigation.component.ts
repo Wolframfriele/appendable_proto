@@ -14,7 +14,7 @@ import { Command, CommandService } from "../../data/command.service";
           routerLinkActive="active-link"
           [routerLinkActiveOptions]="{ exact: true }"
         >
-          Outliner
+          Journal
         </li>
         <li
           routerLink="/projects"

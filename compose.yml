@@ -1,0 +1,11 @@
+services:
+  appendable:
+    build: .
+    ports:
+      - "3000:3000"
+    environment:
+      DATABASE_URL: "sqlite:entries.db"
+    volumes:
+      - "./entries.db:/entries.db"
+    env_file:
+      - ".env"
