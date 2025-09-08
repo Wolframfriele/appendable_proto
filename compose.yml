@@ -4,7 +4,7 @@ services:
       context: .
       args:
         - BUILD_SOURCE_CONTAINER=${BUILD_SOURCE_CONTAINER}
-        - BUILD_TARGET= ${BUILD_TARGET}
+        - BUILD_TARGET=${BUILD_TARGET}
     ports:
       - "3000:3000"
     environment:
