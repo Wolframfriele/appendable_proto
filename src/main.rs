@@ -3,13 +3,13 @@ use axum::{
     extract::{MatchedPath, Path, Query, State},
     http::{Request, StatusCode},
     response::{IntoResponse, Response},
-    routing::{get, post, put},
+    routing::{get, get_service, post, put},
     Json, Router,
 };
 use chrono::{DateTime, Utc};
 use serde::Deserialize;
 use std::sync::Arc;
-use tower_http::trace::TraceLayer;
+use tower_http::{services::ServeDir, trace::TraceLayer};
 use tracing::info_span;
 use tracing_subscriber::{layer::SubscriberExt, util::SubscriberInitExt};
 
@@ -63,7 +63,6 @@ async fn main() {
             "/api/earlier_blocks/{last_data}",
             get(get_first_block_timestamp_before),
         )
-        .fallback(handler_404)
         .layer(
             TraceLayer::new_for_http().make_span_with(|request: &Request<_>| {
                 let matched_path = request
@@ -78,7 +77,10 @@ async fn main() {
                 )
             }),
         )
-        .with_state(state);
+        .with_state(state)
+        .fallback_service(get_service(ServeDir::new(
+            "front_end/dist/appendable_fe/browser",
+        )));
 
     let listener = tokio::net::TcpListener::bind("0.0.0.0:3000").await.unwrap();
     tracing::info!("server listening on {}", listener.local_addr().unwrap());

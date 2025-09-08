@@ -10,7 +10,7 @@ axum-extra = { version = "0.10", features = ["typed-header", "cookie"] }
 
 tokio = { version = "1", features = ["full"] }
 tower = "0.5"
-tower-http = { version = "0.6", features = ["trace"] }
+tower-http = { version = "0.6", features = ["trace", "fs"] }
 serde = { version = "1", features = ["derive"] }
 serde_json = "1"
 chrono = { version = "0.4", features = ["serde", "clock"] }
@@ -33,3 +33,7 @@ cookie = "0.18"
 
 [profile.dev.package.sqlx-macros]
 opt-level = 3
+
+[env]
+CLIENT_ID="wolf"
+CLIENT_SECRET="test"
