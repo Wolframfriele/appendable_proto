@@ -10,7 +10,7 @@ pub struct Database {
 impl Database {
     pub async fn new() -> Result<Database> {
         let pool = SqlitePoolOptions::new()
-            .connect("sqlite://entries.db")
+            .connect("sqlite://appendable.db")
             .await?;
         Ok(Self { pool })
     }

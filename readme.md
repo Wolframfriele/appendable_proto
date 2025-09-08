@@ -3,5 +3,5 @@
 requires a sqlite database, to create a new one run the following command:
 
 ```
-sqlite3 entries.db "VACUUM;"
+sqlite3 appendable.db "VACUUM;"
 ```

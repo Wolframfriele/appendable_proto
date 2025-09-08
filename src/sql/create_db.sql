@@ -1,23 +1,26 @@
-PRAGMA foreign_keys = OFF;
+PRAGMA journal_mode=WAL;
+PRAGMA foreign_keys = ON;
 
 DROP TABLE IF EXISTS projects;
 CREATE TABLE projects (
-	project_id INTEGER PRIMARY KEY,
+	project_id INTEGER PRIMARY key,
 	name VARCHAR(255) NOT NULL,
-	archived BOOLEAN NOT NULL
+	archived BOOLEAN NOT NULL,
+	color VARCHAR(6)
 );
+
 
 DROP TABLE IF EXISTS blocks;
 CREATE TABLE blocks (
     block_id INTEGER PRIMARY KEY,
-    block_text VARCHAR(255) NOT NULL,
+    text VARCHAR(255) NOT NULL,
     project INTEGER,
     start DATETIME NOT NULL,
     end DATETIME,
     duration INTEGER,
 
     FOREIGN KEY (project) REFERENCES projects(project_id)
-    	ON UPDATE CASCADE
+    	ON DELETE SET NULL
 );
 
 DROP TABLE IF EXISTS entries;
@@ -25,7 +28,7 @@ CREATE TABLE entries (
 	entry_id INTEGER PRIMARY KEY,
 	parent INTEGER,
   	nesting INTEGER,
-  	entry_text TEXT,
+  	text TEXT,
   	show_todo BOOLEAN NOT NULL,
   	is_done BOOLEAN NOT NULL,
 
@@ -40,8 +43,8 @@ CREATE TABLE tags (
 	archived BOOLEAN NOT NULL
 );
 
-DROP TABLE IF EXISTS tagged_entries;
-CREATE TABLE tagged_entries (
+DROP TABLE IF EXISTS tagged_blocks;
+CREATE TABLE tagged_blocks (
 	tagged_id INTEGER PRIMARY KEY,
 	block_fk INTEGER NOT NULL,
 	tag_fk INTEGER NOT NULL,
@@ -49,8 +52,3 @@ CREATE TABLE tagged_entries (
     FOREIGN KEY (block_fk) REFERENCES blocks(block_id) ON DELETE CASCADE,
     FOREIGN KEY (tag_fk) REFERENCES tags(tag_id) ON DELETE CASCADE
 );
-
-CREATE INDEX idx_blocks_start ON blocks(start);
-
--- SQLite specific option to turn on foreign key constraints checking
-PRAGMA foreign_keys = ON;

@@ -4,8 +4,8 @@ services:
     ports:
       - "3000:3000"
     environment:
-      DATABASE_URL: "sqlite:entries.db"
+      DATABASE_URL: "sqlite:appendable.db"
     volumes:
-      - "./entries.db:/entries.db"
+      - "./appendable.db:/appendable.db"
     env_file:
       - ".env"
