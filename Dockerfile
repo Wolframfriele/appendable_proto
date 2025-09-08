@@ -12,6 +12,7 @@ COPY . .
 RUN cargo build --release --target ${BUILD_TARGET}
 
 FROM scratch
+ARG BUILD_TARGET
 COPY --from=builder /app/target/${BUILD_TARGET}/release/appendable_proto /appendable_proto
 
 ENTRYPOINT ["/appendable_proto"]
