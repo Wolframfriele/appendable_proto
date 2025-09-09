@@ -78,7 +78,7 @@ export class AuthService {
       switchMap(() =>
         this.http
           .get<AuthResponseJson>("/api/logout")
-          // return EMPTY to not update the current session, sinc the logout did not succeed
+          // return EMPTY to not update the current session, since the logout did not succeed
           // this also avoids the redirects
           .pipe(catchError(() => EMPTY)),
       ),
@@ -89,8 +89,10 @@ export class AuthService {
       if (auth) {
         this.commandService.executeCommand$.next(Command.SWITCH_TO_NORMAL_MODE);
         if (this.redirectUrl) {
+          console.log(`redirectUrl: ${this.redirectUrl}`);
           this.router.navigateByUrl(this.redirectUrl);
         } else {
+          console.log("No redirectUrl");
           this.router.navigateByUrl("/");
         }
         this.error.set(null);

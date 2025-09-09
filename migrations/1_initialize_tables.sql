@@ -1,4 +1,3 @@
-PRAGMA journal_mode=WAL;
 PRAGMA foreign_keys = ON;
 
 DROP TABLE IF EXISTS projects;

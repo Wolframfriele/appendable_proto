@@ -12,6 +12,7 @@ impl Database {
         let pool = SqlitePoolOptions::new()
             .connect("sqlite://appendable.db")
             .await?;
+        sqlx::migrate!().run(&pool).await?;
         Ok(Self { pool })
     }
 }
