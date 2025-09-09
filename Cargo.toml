@@ -33,7 +33,3 @@ cookie = "0.18"
 
 [profile.dev.package.sqlx-macros]
 opt-level = 3
-
-[env]
-CLIENT_ID="wolf"
-CLIENT_SECRET="test"

@@ -9,7 +9,10 @@ use axum::{
 use chrono::{DateTime, Utc};
 use serde::Deserialize;
 use std::sync::Arc;
-use tower_http::{services::ServeDir, trace::TraceLayer};
+use tower_http::{
+    services::{ServeDir, ServeFile},
+    trace::TraceLayer,
+};
 use tracing::info_span;
 use tracing_subscriber::{layer::SubscriberExt, util::SubscriberInitExt};
 
@@ -78,9 +81,13 @@ async fn main() {
             }),
         )
         .with_state(state)
-        .fallback_service(get_service(ServeDir::new(
-            "front_end/dist/appendable_fe/browser",
-        )));
+        .fallback_service(get_service(
+            ServeDir::new("front_end/dist/appendable_fe/browser")
+                .append_index_html_on_directories(false)
+                .fallback(ServeFile::new(
+                    "front_end/dist/appendable_fe/browser/index.html",
+                )),
+        ));
 
     let listener = tokio::net::TcpListener::bind("0.0.0.0:3000").await.unwrap();
     tracing::info!("server listening on {}", listener.local_addr().unwrap());
@@ -275,10 +282,6 @@ where
     fn from(err: E) -> Self {
         Self(err.into())
     }
-}
-
-async fn handler_404() -> impl IntoResponse {
-    (StatusCode::NOT_FOUND, "nothing to see here")
 }
 
 fn day_start() -> DateTime<Utc> {

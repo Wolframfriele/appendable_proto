@@ -28,6 +28,8 @@ import { Router } from "@angular/router";
   providedIn: "root",
 })
 export class AuthService {
+  redirectUrl: string | null = null;
+
   private http = inject(HttpClient);
   private router = inject(Router);
   private commandService = inject(CommandService);
@@ -86,7 +88,11 @@ export class AuthService {
     tap((auth) => {
       if (auth) {
         this.commandService.executeCommand$.next(Command.SWITCH_TO_NORMAL_MODE);
-        this.router.navigateByUrl("/");
+        if (this.redirectUrl) {
+          this.router.navigateByUrl(this.redirectUrl);
+        } else {
+          this.router.navigateByUrl("/");
+        }
         this.error.set(null);
       } else {
         this.commandService.executeCommand$.next(

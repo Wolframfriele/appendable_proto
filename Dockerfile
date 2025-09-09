@@ -36,6 +36,7 @@ RUN cargo build --release --target ${BUILD_TARGET}
 FROM scratch
 ARG BUILD_TARGET
 
+COPY --from=front_end_builder /app/dist/appendable_fe/browser /front_end/dist/appendable_fe/browser
 COPY --from=builder /app/target/${BUILD_TARGET}/release/appendable_proto /appendable_proto
 
 ENTRYPOINT ["/appendable_proto"]
