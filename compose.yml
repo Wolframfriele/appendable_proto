@@ -13,3 +13,9 @@ services:
       - "./appendable.db:/appendable.db"
     env_file:
       - ".env"
+    networks:
+      - net
+
+networks:
+  net:
+    driver: bridge
