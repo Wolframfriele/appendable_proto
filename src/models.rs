@@ -57,7 +57,13 @@ pub struct Project {
     pub project_id: i64,
     pub name: String,
     pub archived: bool,
-    pub color: String,
+    pub color: i64,
+}
+
+#[derive(FromRow, Serialize, Deserialize, Debug)]
+pub struct Color {
+    pub color_id: i64,
+    pub hex_value: String,
 }
 
 #[derive(FromRow, Serialize, Deserialize, Debug)]

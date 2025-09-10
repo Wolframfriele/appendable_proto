@@ -1,11 +1,20 @@
 PRAGMA foreign_keys = ON;
 
+DROP TABLE IF EXISTS colors;
+CREATE TABLE colors (
+    color_id INTEGER PRIMARY key,
+    hex_value VARCHAR(6)
+);
+
 DROP TABLE IF EXISTS projects;
 CREATE TABLE projects (
 	project_id INTEGER PRIMARY key,
 	name VARCHAR(255) NOT NULL,
 	archived BOOLEAN NOT NULL,
-	color VARCHAR(6)
+	color INTEGER,
+
+	FOREIGN KEY (color) REFERENCES colors(color_id)
+	    ON DELETE SET NULL
 );
 
 
@@ -51,3 +60,16 @@ CREATE TABLE tagged_blocks (
     FOREIGN KEY (block_fk) REFERENCES blocks(block_id) ON DELETE CASCADE,
     FOREIGN KEY (tag_fk) REFERENCES tags(tag_id) ON DELETE CASCADE
 );
+
+INSERT INTO colors
+(color_id, hex_value)
+VALUES
+(1, '2dc7c4'),
+(2, '5ae0df'),
+(3, 'ee5396'),
+(4, 'be95ff'),
+(5, '25be6a'),
+(6, 'fae3b0'),
+(7, 'ff7eb6'),
+(8, '33b1ff'),
+(9, '78a9ff');

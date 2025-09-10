@@ -58,15 +58,9 @@ where
             .await
             .map_err(|_| AuthError::InvalidToken)?;
         let cookie = jar.get("accessToken").ok_or(AuthError::InvalidToken)?;
-        tracing::info!("{:?}", cookie);
         let token_data = decode::<Claims>(cookie.value(), &KEYS.decoding, &Validation::default())
-            .map_err(|e| {
-            tracing::error!("Could not decode token: {:?}", e);
-            AuthError::InvalidToken
-        })?;
-        tracing::info!("{:?}", token_data);
+            .map_err(|e| AuthError::InvalidToken)?;
         let current = Utc::now().naive_utc().and_utc().timestamp() as usize;
-        tracing::info!("{:?}", current);
         if current > token_data.claims.exp {
             return Err(AuthError::InvalidToken);
         }

@@ -53,29 +53,3 @@ COPY --from=builder /app/target/release/appendable_proto /appendable_proto
 COPY --from=front_end_builder /app/dist/appendable_fe/browser /front_end/dist/appendable_fe/browser
 ENTRYPOINT ["/appendable_proto"]
 EXPOSE 3000
-
-# ========================================================================
-# Stage 2: Build the back-end
-# ========================================================================
-# FROM messense/rust-musl-cross:${BUILD_SOURCE_CONTAINER} AS builder
-# ARG BUILD_TARGET
-
-# ENV SQLX_OFFLINE=true
-# WORKDIR /app
-
-# COPY . .
-# COPY --from=front_end_builder /app/dist/appendable_fe/browser front_end/dist/appendable_fe/browser
-
-# RUN cargo build --release --target ${BUILD_TARGET}
-
-# ========================================================================
-# Stage 3: Copy over to empty and start application
-# ========================================================================
-# FROM scratch
-# ARG BUILD_TARGET
-
-# COPY --from=front_end_builder /app/dist/appendable_fe/browser /front_end/dist/appendable_fe/browser
-# COPY --from=builder /app/target/${BUILD_TARGET}/release/appendable_proto /appendable_proto
-
-# ENTRYPOINT ["/appendable_proto"]
-# EXPOSE 3000
