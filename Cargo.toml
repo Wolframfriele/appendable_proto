@@ -31,5 +31,7 @@ rand = "0.9"
 jsonwebtoken = "9"
 cookie = "0.18"
 
+dotenvy = "0.15"
+
 [profile.dev.package.sqlx-macros]
 opt-level = 3

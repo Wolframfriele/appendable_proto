@@ -9,9 +9,9 @@ pub struct Database {
 
 impl Database {
     pub async fn new() -> Result<Database> {
-        let pool = SqlitePoolOptions::new()
-            .connect("sqlite://appendable.db")
-            .await?;
+        let database_url = dotenvy::var("DATABASE_URL")
+            .expect("An environment variable DATABASE_URL needs to be set");
+        let pool = SqlitePoolOptions::new().connect(&database_url).await?;
         sqlx::migrate!().run(&pool).await?;
         Ok(Self { pool })
     }

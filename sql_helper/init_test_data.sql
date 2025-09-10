@@ -2,7 +2,7 @@ INSERT INTO projects
 (project_id, name, archived, color)
 VALUES
 (1, 'Integration-Testing', 0, '25be6a'),
-(2, 'Appendable', 0, '5ae0df'),
+(2, 'Appendable', 1, '5ae0df'),
 (3, 'Refinement', 0, 'ee5396'),
 (4, 'Planning', 0, 'be95ff'),
 (5, 'Review', 0, 'ee5396'),

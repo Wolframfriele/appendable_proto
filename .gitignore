@@ -1,3 +1,4 @@
 /target
 appendable.db
 .env
+/backup
