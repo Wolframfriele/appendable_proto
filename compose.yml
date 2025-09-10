@@ -10,23 +10,12 @@ services:
       DATABASE_URL: "sqlite:appendable.db"
     volumes:
       - "./appendable.db:/appendable.db"
-      - "./appendable.db-shm:/appendable.db-shm"
-      - "./appendable.db-wal:/appendable.db-wal"
+      - "./appendable.db-shm/:/appendable.db-shm"
+      - "./appendable.db-wal/:/appendable.db-wal"
     env_file:
       - ".env"
     networks:
       - net
-  reverse-proxy:
-    image: nginx:latest
-    container_name: reverse-proxy
-    volumes:
-      - ./nginx.conf:/etc/nginx/nginx.conf:ro
-    ports:
-      - "8080:80"
-    networks:
-      - net
-    depends_on:
-      - appendable-be
 
 networks:
   net:
