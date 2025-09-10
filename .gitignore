@@ -1,4 +1,6 @@
 /target
 appendable.db
+appendable.db-shm
+appendable.db-wal
 .env
 /backup
