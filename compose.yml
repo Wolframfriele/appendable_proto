@@ -7,15 +7,15 @@ services:
         - BUILD_TARGET=${BUILD_TARGET}
     container_name: appendable-be
     environment:
-      DATABASE_URL: "sqlite:appendable.db"
+      DATABASE_URL: "sqlite:/appendable.db"
     volumes:
       - "./appendable.db:/appendable.db"
-      - "./appendable.db-shm/:/appendable.db-shm"
-      - "./appendable.db-wal/:/appendable.db-wal"
     env_file:
       - ".env"
     networks:
       - net
+    ports:
+      - "3000:3000"
 
 networks:
   net:

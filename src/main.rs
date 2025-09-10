@@ -82,10 +82,10 @@ async fn main() {
         )
         .with_state(state)
         .fallback_service(get_service(
-            ServeDir::new("front_end/dist/appendable_fe/browser")
+            ServeDir::new("/front_end/dist/appendable_fe/browser")
                 .append_index_html_on_directories(false)
                 .fallback(ServeFile::new(
-                    "front_end/dist/appendable_fe/browser/index.html",
+                    "/front_end/dist/appendable_fe/browser/index.html",
                 )),
         ));
 
