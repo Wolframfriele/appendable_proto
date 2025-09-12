@@ -23,6 +23,7 @@ import { Command, CommandService } from "../../../shared/data/command.service";
 import { takeUntilDestroyed, toObservable } from "@angular/core/rxjs-interop";
 import { distinctUntilChanged, filter } from "rxjs";
 import { OutlinerStateService } from "../../data/outliner-state.service";
+import { ViewportScroller } from "@angular/common";
 
 @Component({
   selector: "app-outliner-entry",
@@ -186,6 +187,8 @@ import { OutlinerStateService } from "../../data/outliner-state.service";
 export class OutlinerEntryComponent {
   @ViewChild("textBox") textBox!: ElementRef<HTMLDivElement>;
 
+  viewportScroller = inject(ViewportScroller);
+
   entryService = inject(EntryService);
   keyboardService = inject(KeyboardService);
   commandService = inject(CommandService);
@@ -246,6 +249,11 @@ export class OutlinerEntryComponent {
         this.keyboardService.activeControlMode() === ControlMode.INSERT_MODE
       ) {
         this.focusEntry();
+      }
+
+      if (this.isActive() && !this.entryIsOnScreen()) {
+        this.viewportScroller.setOffset([0, 70]);
+        this.viewportScroller.scrollToAnchor(`${this.entry().id}`);
       }
     });
 
@@ -360,5 +368,15 @@ export class OutlinerEntryComponent {
     if (this.isActive()) {
       this.onCheckboxToggled(!this.entryModel().isDone);
     }
+  }
+
+  entryIsOnScreen(): boolean {
+    if (this.textBox) {
+      const rect = this.textBox.nativeElement.getBoundingClientRect();
+      const topShown = rect.top >= 0;
+      const bottomShown = rect.bottom <= window.innerHeight;
+      return topShown && bottomShown;
+    }
+    return false;
   }
 }

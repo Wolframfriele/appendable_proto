@@ -21,6 +21,9 @@ import { ColorService } from "../shared/data/color.service";
       </thead>
       <tbody>
         @for (project of projects; track idx; let idx = $index) {
+          <!-- It might make it much simpler if I implement the row as a
+          project.component that way I can use the model and update single
+          rows when changed etc -->
           <tr [class.active]="this.isActive(idx)">
             <td>{{ project.id }}</td>
             <td [style.color]="this.colorForProject(project.color)">
