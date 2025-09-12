@@ -59,7 +59,7 @@ where
             .map_err(|_| AuthError::InvalidToken)?;
         let cookie = jar.get("accessToken").ok_or(AuthError::InvalidToken)?;
         let token_data = decode::<Claims>(cookie.value(), &KEYS.decoding, &Validation::default())
-            .map_err(|e| AuthError::InvalidToken)?;
+            .map_err(|_| AuthError::InvalidToken)?;
         let current = Utc::now().naive_utc().and_utc().timestamp() as usize;
         if current > token_data.claims.exp {
             return Err(AuthError::InvalidToken);

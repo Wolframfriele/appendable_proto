@@ -1,4 +1,4 @@
-use crate::models::{Block, Entry, InsertResult, NextDataResponse, Project};
+use crate::models::{Block, Color, Entry, InsertResult, NextDataResponse, Project};
 use anyhow::Result;
 use chrono::NaiveDateTime;
 use sqlx::sqlite::{SqlitePool, SqlitePoolOptions};
@@ -389,4 +389,17 @@ pub async fn update_projects(db: &Database, project: Project) -> Result<Project>
     .await?;
 
     select_project(db, project.project_id).await
+}
+
+pub async fn select_colors(db: &Database) -> Result<Vec<Color>> {
+    Ok(sqlx::query_as::<_, Color>(
+        "
+    SELECT
+        color_id,
+        hex_value
+    FROM colors
+        ",
+    )
+    .fetch_all(&db.pool)
+    .await?)
 }

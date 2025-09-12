@@ -1,16 +1,10 @@
-import {
-  Component,
-  effect,
-  inject,
-  input,
-  output,
-  Output,
-} from "@angular/core";
+import { Component, computed, inject, input, output } from "@angular/core";
 import { DisplayTagsComponent } from "../display-tags/display-tags.component";
 import { DurationVsEstimateComponent } from "../../../shared/ui/duration-vs-estimate/duration-vs-estimate.component";
 import { ProjectService } from "../../data/project.service";
 import { FuzzySearchFieldComponent } from "../../../shared/ui/fuzzy-search-field/fuzzy-search-field.component";
 import { Project } from "../../../model/project.model";
+import { ColorService } from "../../../shared/data/color.service";
 
 @Component({
   standalone: true,
@@ -22,7 +16,12 @@ import { Project } from "../../../model/project.model";
   ],
   template: `
     @if (projectName()) {
-      <a routerLink="/projects/" class="project-link">{{ projectName() }}</a>
+      <a
+        routerLink="/projects"
+        class="project-link"
+        [style.color]="this.projectColor()"
+        >{{ projectName() }}</a
+      >
     } @else {
       <app-fuzzy-search-field
         [searchableOptions]="projectNames"
@@ -59,7 +58,6 @@ import { Project } from "../../../model/project.model";
 
       .project-link {
         display: inline-block;
-        color: var(--deep-cyan);
       }
 
       .project-selector {
@@ -82,13 +80,24 @@ import { Project } from "../../../model/project.model";
 })
 export class BlockInfoComponent {
   projectName = input<string | undefined>(undefined);
-  projectId = input<number | undefined>(undefined);
   duration = input<number>(0);
   estimate = input<number | undefined>(undefined);
   tags = input<string[]>([]);
   projectSelected = output<Project>();
+  projectColor = computed(() => {
+    const projectName = this.projectName();
+    if (!projectName) {
+      return this.colorService.defaultColor;
+    }
+    const project = this.projectService.resolveFromName(projectName);
+    if (!project || !project.color) {
+      return this.colorService.defaultColor;
+    }
+    return this.colorService.getColorCode(project.color);
+  });
 
   projectService = inject(ProjectService);
+  colorService = inject(ColorService);
 
   get projectNames(): string[] {
     return this.projectService.projects().map((project) => project.name);
@@ -102,7 +111,7 @@ export class BlockInfoComponent {
       this.projectService.add$.next({
         id: 0,
         name: projectName,
-        color: "ffffff",
+        color: undefined,
         archived: false,
       });
 

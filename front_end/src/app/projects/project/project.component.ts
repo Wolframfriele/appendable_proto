@@ -1,6 +1,7 @@
-import { Component, input } from "@angular/core";
+import { Component, inject, input } from "@angular/core";
 import { Project } from "../../model/project.model";
 import { CheckboxComponent } from "../../outliner/ui/checkbox/checkbox.component";
+import { ColorService } from "../../shared/data/color.service";
 
 @Component({
   standalone: true,
@@ -29,4 +30,6 @@ import { CheckboxComponent } from "../../outliner/ui/checkbox/checkbox.component
 })
 export class ProjectComponent {
   project = input.required<Project>();
+
+  colorService = inject(ColorService);
 }

@@ -2,12 +2,9 @@ services:
   appendable-be:
     build:
       context: .
-      args:
-        - BUILD_SOURCE_CONTAINER=${BUILD_SOURCE_CONTAINER}
-        - BUILD_TARGET=${BUILD_TARGET}
     container_name: appendable-be
     environment:
-      DATABASE_URL: "sqlite:/appendable.db"
+      DATABASE_URL: "sqlite:appendable.db"
     volumes:
       - "./appendable.db:/appendable.db"
     env_file:

@@ -19,10 +19,10 @@ use tracing_subscriber::{layer::SubscriberExt, util::SubscriberInitExt};
 use appendable_proto::{
     auth::{get_session, login, logout, Claims},
     database::{
-        delete_blocks, insert_new_block, insert_new_project, select_blocks, select_entries,
-        select_projects, update_block,
+        delete_blocks, insert_new_block, insert_new_project, select_blocks, select_colors,
+        select_entries, select_projects, update_block,
     },
-    models::{Block, Entry, NextDataResponse, Project},
+    models::{Block, Color, Entry, NextDataResponse, Project},
 };
 
 use appendable_proto::database::{
@@ -62,6 +62,7 @@ async fn main() {
         )
         .route("/api/projects", get(get_projects))
         .route("/api/projects/{project_id}", post(post_projects))
+        .route("/api/colors", get(get_colors))
         .route(
             "/api/earlier_blocks/{last_data}",
             get(get_first_block_timestamp_before),
@@ -245,6 +246,14 @@ async fn post_projects(
 ) -> Result<Json<Project>, BadRequestError> {
     println!("Post new project: {:?}", payload);
     Ok(Json(insert_new_project(&db, payload).await?))
+}
+
+async fn get_colors(
+    _: Claims,
+    db: State<Arc<Database>>,
+) -> Result<Json<Vec<Color>>, BadRequestError> {
+    println!("Get colors");
+    Ok(Json(select_colors(&db).await?))
 }
 
 // Error handling

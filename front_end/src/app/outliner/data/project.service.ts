@@ -13,11 +13,7 @@ import {
   switchMap,
 } from "rxjs";
 import { ProjectJson } from "../../model/project.interface";
-import {
-  mapToProject,
-  mapToProjectJson,
-  mapToProjects,
-} from "../../model/project.mapper";
+import { mapToProjectJson, mapToProjects } from "../../model/project.mapper";
 import { takeUntilDestroyed } from "@angular/core/rxjs-interop";
 
 export interface ProjectState {
