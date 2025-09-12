@@ -38,9 +38,12 @@ export class ProjectService {
     error: null,
   });
 
-  projects = computed(() => this.state().projects);
-  loaded = computed(() => this.state().loaded);
-  error = computed(() => this.state().error);
+  readonly projects = computed(() => this.state().projects);
+  readonly unarchivedProjects = computed(() =>
+    this.projects().filter((project) => project.archived === false),
+  );
+  readonly loaded = computed(() => this.state().loaded);
+  readonly error = computed(() => this.state().error);
 
   add$ = new Subject<Project>();
   edit$ = new Subject<Project>();

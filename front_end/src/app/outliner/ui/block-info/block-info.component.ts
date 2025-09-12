@@ -100,7 +100,9 @@ export class BlockInfoComponent {
   colorService = inject(ColorService);
 
   get projectNames(): string[] {
-    return this.projectService.projects().map((project) => project.name);
+    return this.projectService
+      .unarchivedProjects()
+      .map((project) => project.name);
   }
 
   onProjectSelected(projectName: string) {

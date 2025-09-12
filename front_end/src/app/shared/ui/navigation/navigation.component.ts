@@ -23,13 +23,6 @@ import { Command, CommandService } from "../../data/command.service";
         >
           Projects
         </li>
-        <li
-          routerLink="/login"
-          routerLinkActive="active-link"
-          [routerLinkActiveOptions]="{ exact: true }"
-        >
-          login
-        </li>
       </ul>
     </div>
   `,
@@ -78,7 +71,7 @@ export class NavigationComponent {
   constructor() {
     this.commandService.executeCommand$.subscribe((command) => {
       switch (command) {
-        case Command.GO_TO_OUTLINER:
+        case Command.GO_TO_JOURNAL:
           this.router.navigate(["/"]);
           break;
         case Command.GO_TO_PROJECTS:

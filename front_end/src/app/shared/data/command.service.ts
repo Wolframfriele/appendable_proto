@@ -8,7 +8,7 @@ export enum Command {
   SWITCH_TO_COMMAND_MODE = "navigation: switch to command mode",
   SWITCH_TO_DEFAULT_MODE = "navigation: switch to default mode",
 
-  GO_TO_OUTLINER = "navigation: go to outliner",
+  GO_TO_JOURNAL = "navigation: go to journal",
   GO_TO_PROJECTS = "navigation: go to projects",
 
   MOVE_TO_PREVIOUS_CONTAINER = "navigation: move to previous container",
@@ -16,17 +16,17 @@ export enum Command {
   MOVE_TO_PREVIOUS_ELEMENT = "navigation: move to previous element",
   MOVE_TO_NEXT_ELEMENT = "navigation: move to next element",
 
-  ADD_NEW = "crud: add new element",
-  DELETE_SELECTED_BLOCK = "crud: delete selected block",
-  END_SELECTED_BLOCK = "crud: end selected block",
-
   ADD_NEW_ENTRY = "crud: add new entry",
   ADD_NEW_CHILD_ENTRY = "crud: add new child entry",
-  DELETE_ELEMENT = "crud: delete active entry",
+  DELETE_ELEMENT = "crud: delete active element",
   INDENT_ENTRY = "crud: indent entry",
   OUTDENT_ENTRY = "crud: outdent entry",
   TOGGLE_TODO = "crud: toggle todo",
   TOGGLE_DONE = "crud: toggle done",
+
+  ADD_NEW = "crud: add new element",
+  DELETE_SELECTED_BLOCK = "crud: delete selected block",
+  END_SELECTED_BLOCK = "crud: end selected block",
 
   LOGOUT = "auth: logout",
 }
