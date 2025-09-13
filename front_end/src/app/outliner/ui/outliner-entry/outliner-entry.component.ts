@@ -244,16 +244,19 @@ export class OutlinerEntryComponent {
     );
 
     effect(() => {
+      if (this.isActive() && !this.entryIsOnScreen()) {
+        this.viewportScroller.setOffset([0, 70]);
+        this.viewportScroller.scrollToAnchor(`${this.entry().id}`);
+
+        // it seems that scrollToAnchor gives some elements focus
+        (document.activeElement as HTMLElement).blur();
+      }
+
       if (
         this.isActive() &&
         this.keyboardService.activeControlMode() === ControlMode.INSERT_MODE
       ) {
         this.focusEntry();
-      }
-
-      if (this.isActive() && !this.entryIsOnScreen()) {
-        this.viewportScroller.setOffset([0, 70]);
-        this.viewportScroller.scrollToAnchor(`${this.entry().id}`);
       }
     });
 

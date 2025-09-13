@@ -1,6 +1,6 @@
 import { Injectable, signal, computed, inject } from "@angular/core";
 import { HttpClient } from "@angular/common/http";
-import { Observable, merge, EMPTY, Subject, of } from "rxjs";
+import { Observable, merge, EMPTY, Subject, of, timer } from "rxjs";
 import {
   catchError,
   filter,
@@ -41,6 +41,7 @@ export class AuthService {
   private checkSession$ = new Subject<void>();
   private login$ = new Subject<AuthPayload>();
   private logout$ = new Subject<void>();
+  private sessionEnded$ = new Subject<void>();
 
   private session$: Observable<AuthResponse | null> = merge(
     this.checkSession$.pipe(
@@ -84,15 +85,16 @@ export class AuthService {
       ),
       map(() => null),
     ),
+    this.sessionEnded$.pipe(map(() => null)),
   ).pipe(
     tap((auth) => {
       if (auth) {
+        // emit sessionEnded on ended when expires date reached
+        timer(auth.expires).subscribe(() => this.sessionEnded$.next());
         this.commandService.executeCommand$.next(Command.SWITCH_TO_NORMAL_MODE);
         if (this.redirectUrl) {
-          console.log(`redirectUrl: ${this.redirectUrl}`);
           this.router.navigateByUrl(this.redirectUrl);
         } else {
-          console.log("No redirectUrl");
           this.router.navigateByUrl("/");
         }
         this.error.set(null);

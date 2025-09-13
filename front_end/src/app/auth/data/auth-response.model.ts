@@ -13,7 +13,7 @@ export function mapToAuthResponse(
 ): AuthResponse {
   return {
     clientId: responseBody.client_id,
-    expires: new Date(responseBody.exp),
+    expires: new Date(parseInt(responseBody.exp) * 1000),
   };
 }
 
