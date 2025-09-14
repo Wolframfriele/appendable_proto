@@ -23,6 +23,7 @@ import {
 } from "../../auth/data/auth-payload.model";
 import { Command, CommandService } from "../../shared/data/command.service";
 import { Router } from "@angular/router";
+import { takeUntilDestroyed } from "@angular/core/rxjs-interop";
 
 @Injectable({
   providedIn: "root",
@@ -109,6 +110,7 @@ export class AuthService {
       return auth;
     }),
     shareReplay(1),
+    takeUntilDestroyed(),
   );
 
   constructor() {

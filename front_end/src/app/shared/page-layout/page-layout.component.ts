@@ -1,6 +1,6 @@
 import { Component, inject } from "@angular/core";
 import { RouterOutlet } from "@angular/router";
-import { ControlMode, KeyboardService } from "../data/keyboard.service";
+import { KeyboardService } from "../data/keyboard.service";
 import { Command, CommandService } from "../data/command.service";
 import { HeaderComponent } from "../ui/header/header.component";
 import { FuzzySearchFieldComponent } from "../ui/fuzzy-search-field/fuzzy-search-field.component";
@@ -47,9 +47,7 @@ export class PageLayoutComponent {
   commandService = inject(CommandService);
 
   get isCommandModeActive() {
-    return (
-      this.keyboardService.activeControlMode() === ControlMode.COMMAND_MODE
-    );
+    return this.keyboardService.isCommandMode();
   }
 
   executeCommand(commandValue: string) {

@@ -110,18 +110,13 @@ export class BlockInfoComponent {
     if (project) {
       this.projectSelected.emit(project);
     } else {
-      this.projectService.add$.next({
-        id: 0,
-        name: projectName,
-        color: undefined,
-        archived: false,
+      this.projectService.add(projectName).subscribe(() => {
+        // await until the resolveFromName manages to resolve then emit the projectSelected
+        const newProject = this.projectService.resolveFromName(projectName);
+        if (newProject) {
+          this.projectSelected.emit(newProject);
+        }
       });
-
-      // await until the resolveFromName manages to resolve then emit the projectSelected
-      const newProject = this.projectService.resolveFromName(projectName);
-      if (newProject) {
-        this.projectSelected.emit(newProject);
-      }
     }
   }
 }

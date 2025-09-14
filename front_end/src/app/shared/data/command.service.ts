@@ -23,6 +23,8 @@ export enum Command {
   OUTDENT_ENTRY = "crud: outdent entry",
   TOGGLE_TODO = "crud: toggle todo",
   TOGGLE_DONE = "crud: toggle done",
+  ARCHIVE_PROJECT = "crud: archive project",
+  UNARCHIVE_PROJECT = "crud: unarchive project",
 
   ADD_NEW = "crud: add new element",
   DELETE_SELECTED_BLOCK = "crud: delete selected block",
@@ -35,7 +37,6 @@ export enum Command {
   providedIn: "root",
 })
 export class CommandService {
-  // Option to call commands
   executeCommand$ = new Subject<Command>();
 
   public get possibleCommands(): string[] {

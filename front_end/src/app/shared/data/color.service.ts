@@ -32,7 +32,7 @@ export class ColorService {
   }
 
   get defaultColor() {
-    return this.noColor;
+    return 1;
   }
 
   private handleError(err: any) {

@@ -15,10 +15,7 @@ import { FormsModule } from "@angular/forms";
 import { ContenteditableDirective } from "../../../model/contenteditable.model";
 import { Entry } from "../../../model/entry.model";
 import { EntryService } from "../../data/entry.service";
-import {
-  ControlMode,
-  KeyboardService,
-} from "../../../shared/data/keyboard.service";
+import { KeyboardService } from "../../../shared/data/keyboard.service";
 import { Command, CommandService } from "../../../shared/data/command.service";
 import { takeUntilDestroyed, toObservable } from "@angular/core/rxjs-interop";
 import { distinctUntilChanged, filter } from "rxjs";
@@ -214,9 +211,7 @@ export class OutlinerEntryComponent {
   isMenuHovered = signal(false);
   isMenuOpen = computed(() => this.isDotHovered() || this.isMenuHovered());
   displayActive = computed(
-    () =>
-      this.isActive() &&
-      this.keyboardService.activeControlMode() !== ControlMode.INSERT_MODE,
+    () => this.isActive() && !this.keyboardService.isInsertMode(),
   );
 
   indentArray: Signal<number[]> = computed(() => {
@@ -251,14 +246,21 @@ export class OutlinerEntryComponent {
         // it seems that scrollToAnchor gives some elements focus
         (document.activeElement as HTMLElement).blur();
       }
+    });
 
-      if (
-        this.isActive() &&
-        this.keyboardService.activeControlMode() === ControlMode.INSERT_MODE
-      ) {
+    effect(() => {
+      if (this.isActive() && this.keyboardService.isInsertMode()) {
         this.focusEntry();
       }
     });
+
+    // Should also happen when going out of insert mode and the entry was active
+    toObservable(this.isActive)
+      .pipe(
+        distinctUntilChanged(),
+        filter((value) => value === false),
+      )
+      .subscribe(() => this.updateEntryWhenDirty());
 
     this.commandService.executeCommand$
       .pipe(takeUntilDestroyed())
@@ -266,21 +268,6 @@ export class OutlinerEntryComponent {
         switch (command) {
           case Command.ADD_NEW_ENTRY:
             return this.handleAddEntry();
-        }
-      });
-
-    const becameInactive$ = toObservable(this.isActive).pipe(
-      distinctUntilChanged(),
-      filter((value) => value === false),
-    );
-
-    // should also happen when switching back from insert mode, and entry was active
-    becameInactive$.subscribe(() => this.updateEntryWhenDirty());
-
-    this.commandService.executeCommand$
-      .pipe(takeUntilDestroyed())
-      .subscribe((command) => {
-        switch (command) {
           case Command.INDENT_ENTRY:
             return this.indentEntry();
           case Command.OUTDENT_ENTRY:
@@ -298,33 +285,32 @@ export class OutlinerEntryComponent {
   }
 
   focusEntry() {
-    console.log(`Focus entry: ${this.entry().id}`);
     setTimeout(() => {
       this.textBox.nativeElement.focus();
     });
-    this.commandService.executeCommand$.next(Command.SWITCH_TO_INSERT_MODE);
-    this.outlinerState.activeBlockIdx.set(this.blockIdx());
-    this.outlinerState.activeEntryIdx.set(this.idx());
+    if (!this.keyboardService.isInsertMode()) {
+      this.commandService.executeCommand$.next(Command.SWITCH_TO_INSERT_MODE);
+    }
+    if (this.outlinerState.activeBlockIdx() !== this.blockIdx()) {
+      this.outlinerState.activeBlockIdx.set(this.blockIdx());
+    }
+    if (this.outlinerState.activeEntryIdx() !== this.idx()) {
+      this.outlinerState.activeEntryIdx.set(this.idx());
+    }
   }
 
   updateEntryWhenDirty() {
     if (this.entryDirty) {
-      if (this.entryModel().id === 0) {
-        this.entryService.add$.next(this.entryModel());
-      } else {
-        this.entryService.edit$.next(this.entryModel());
-      }
+      this.entryService.edit$.next(this.entryModel());
     }
   }
 
   onCheckboxToggled(newValue: boolean) {
-    console.log(`Toggle checkbox or entry ${this.entry().id} to ${newValue}`);
     this.entryModel.update((entry) => ({ ...entry, isDone: newValue }));
     this.entryService.edit$.next(this.entryModel());
   }
 
   onTodoToggled() {
-    console.log(`Toggle todo for entry: ${this.entry().id}`);
     this.entryModel.update((entry) => ({
       ...entry,
       showTodo: !entry.showTodo,
@@ -333,7 +319,6 @@ export class OutlinerEntryComponent {
   }
 
   onDeleteEntry() {
-    console.log(`Deleting entry: ${this.entry().id}`);
     this.entryService.remove$.next({ id: this.entry().id });
   }
 

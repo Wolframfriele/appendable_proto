@@ -1,8 +1,8 @@
 export type Project = {
   id: number;
   name: string;
-  archived: boolean;
   color: number | undefined;
+  archived: boolean;
 };
 
 export type ArchiveProject = { id: Project["id"] };

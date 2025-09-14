@@ -5,8 +5,8 @@ export function mapToProject(project: ProjectJson): Project {
   return {
     id: project.project_id,
     name: project.name,
-    archived: project.archived,
     color: project.color,
+    archived: project.archived,
   };
 }
 
@@ -18,7 +18,7 @@ export function mapToProjectJson(project: Project): ProjectJson {
   return {
     project_id: project.id,
     name: project.name,
-    archived: project.archived,
     color: project.color,
+    archived: project.archived,
   };
 }

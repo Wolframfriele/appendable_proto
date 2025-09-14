@@ -4,11 +4,12 @@ import { ProjectsStateService } from "./data/projects-state.service";
 import { Command, CommandService } from "../shared/data/command.service";
 import { takeUntilDestroyed } from "@angular/core/rxjs-interop";
 import { ColorService } from "../shared/data/color.service";
+import { ProjectComponent } from "./ui/project/project.component";
 
 @Component({
   standalone: true,
   selector: "app-projects",
-  imports: [],
+  imports: [ProjectComponent],
   template: `
     <table>
       <thead>
@@ -21,21 +22,11 @@ import { ColorService } from "../shared/data/color.service";
       </thead>
       <tbody>
         @for (project of projects; track idx; let idx = $index) {
-          <!-- It might make it much simpler if I implement the row as a
-          project.component that way I can use the model and update single
-          rows when changed etc -->
-          <tr [class.active]="this.isActive(idx)">
-            <td>{{ project.id }}</td>
-            <td [style.color]="this.colorForProject(project.color)">
-              {{ project.name }}
-            </td>
-            <td>
-              {{ project.color }}
-            </td>
-            <td>
-              {{ project.archived }}
-            </td>
-          </tr>
+          <app-project
+            [project]="project"
+            [projectColor]="this.colorForProject(project.color)"
+            [idx]="idx"
+          />
         }
       </tbody>
     </table>
@@ -56,17 +47,7 @@ import { ColorService } from "../shared/data/color.service";
       margin-top: 2rem;
     }
 
-    tr {
-      padding: 0.5rem;
-      border-radius: 5px;
-    }
-
     th {
-      /*background: var(--darker-black);*/
-      padding: 0.5rem;
-    }
-
-    td {
       padding: 0.5rem;
     }
   `,
@@ -84,8 +65,10 @@ export class ProjectsComponent {
         switch (command) {
           case Command.ADD_NEW:
             return this.addNewProject();
-          case Command.DELETE_ELEMENT:
+          case Command.ARCHIVE_PROJECT:
             return this.archiveProject();
+          case Command.UNARCHIVE_PROJECT:
+            return this.unarchiveProject();
           case Command.MOVE_TO_PREVIOUS_ELEMENT:
             return this.activatePreviousProject();
           case Command.MOVE_TO_NEXT_ELEMENT:
@@ -98,18 +81,36 @@ export class ProjectsComponent {
     return this.projectService.projects();
   }
 
+  get activeProject() {
+    return this.projects[this.state.activeProjectIdx()];
+  }
+
   colorForProject(colorId: number | undefined): string {
     if (!colorId) {
-      return this.colorService.defaultColor;
+      return this.colorService.noColor;
     }
     return this.colorService.getColorCode(colorId);
   }
 
   addNewProject() {
-    console.log("new project");
+    this.projectService.add("").subscribe((projects) => {
+      // Find way to set new project as active
+      // If I could get the ID of the new project
+      // I am returning that on creation, I just don't have access to that part of the stream
+      // In the entries, I'm just assuming that a new entry will always be the last element, but
+      // for projects that might not be the case (If I allow the user to click on datatable headers to change sorting)
+      this.state.activeProjectIdx.set(projects.length - 1);
+      this.commandService.executeCommand$.next(Command.SWITCH_TO_INSERT_MODE);
+    });
   }
 
-  archiveProject() {}
+  archiveProject() {
+    this.projectService.archive(this.activeProject.id);
+  }
+
+  unarchiveProject() {
+    this.projectService.unarchive(this.activeProject.id);
+  }
 
   activatePreviousProject() {
     if (this.state.activeProjectIdx() > 0) {
@@ -121,9 +122,5 @@ export class ProjectsComponent {
     if (this.state.activeProjectIdx() < this.projects.length - 1) {
       this.state.activeProjectIdx.update((currentId) => currentId + 1);
     }
-  }
-
-  isActive(idx: number): boolean {
-    return this.state.activeProjectIdx() === idx;
   }
 }

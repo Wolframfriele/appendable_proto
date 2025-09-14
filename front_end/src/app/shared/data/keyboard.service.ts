@@ -30,7 +30,7 @@ export class KeyboardService {
 
   activeControlMode = computed(() => this.state().activeControlMode);
 
-  keyboard$ = fromEvent<KeyboardEvent>(document, "keydown").pipe();
+  private keyboard$ = fromEvent<KeyboardEvent>(document, "keydown").pipe();
 
   constructor() {
     this.commandService.executeCommand$.subscribe((command) => {
@@ -111,5 +111,13 @@ export class KeyboardService {
       result = result.concat("Alt+");
     }
     return result.concat(keyEvent.key);
+  }
+
+  public isInsertMode(): boolean {
+    return this.activeControlMode() === ControlMode.INSERT_MODE;
+  }
+
+  public isCommandMode(): boolean {
+    return this.activeControlMode() === ControlMode.COMMAND_MODE;
   }
 }
