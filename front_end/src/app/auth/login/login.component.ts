@@ -9,39 +9,43 @@ import { Router } from "@angular/router";
   selector: "app-login",
   imports: [ReactiveFormsModule],
   template: `
-    <div class="card">
-      <form [formGroup]="form">
-        <legend>Login</legend>
-        <div class="form-field">
-          <input
-            name="username"
-            formControlName="username"
-            type="email"
-            class="input-field"
-            placeholder="email"
-            autofocus
-          />
-        </div>
-        <div class="form-field">
-          <input
-            #passwordField
-            name="password"
-            formControlName="password"
-            type="password"
-            class="input-field"
-            placeholder="password"
-          />
-        </div>
-        @if (this.authService.error()) {
-          <div class="form-fiels">
-            <p class="error">{{ this.authService.error() }}</p>
+    @if (this.authService.loaded()) {
+      <div class="card">
+        <form [formGroup]="form">
+          <legend>Login</legend>
+          <div class="form-field">
+            <input
+              name="username"
+              formControlName="username"
+              type="email"
+              class="input-field"
+              placeholder="email"
+              autofocus
+            />
           </div>
-        }
-        <div class="form-buttons">
-          <button class="button button-primary" (click)="login()">Login</button>
-        </div>
-      </form>
-    </div>
+          <div class="form-field">
+            <input
+              #passwordField
+              name="password"
+              formControlName="password"
+              type="password"
+              class="input-field"
+              placeholder="password"
+            />
+          </div>
+          @if (this.authService.error()) {
+            <div class="form-fiels">
+              <p class="error">{{ this.authService.error() }}</p>
+            </div>
+          }
+          <div class="form-buttons">
+            <button class="button button-primary" (click)="login()">
+              Login
+            </button>
+          </div>
+        </form>
+      </div>
+    }
   `,
   styles: `
     :host {

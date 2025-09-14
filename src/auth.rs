@@ -2,9 +2,10 @@ use std::env;
 
 use axum::{
     extract::FromRequestParts,
-    http::{request::Parts, StatusCode},
-    response::{IntoResponse, Response},
-    Json, RequestPartsExt,
+    http::request::Parts,
+    response::IntoResponse,
+    routing::{get, post},
+    Json, RequestPartsExt, Router,
 };
 use axum_extra::extract::cookie::{Cookie, CookieJar};
 use chrono::Utc;
@@ -13,7 +14,8 @@ use jsonwebtoken::{decode, encode, DecodingKey, EncodingKey, Header, Validation}
 use once_cell::sync::Lazy;
 use rand::distr::{Alphanumeric, SampleString};
 use serde::{Deserialize, Serialize};
-use serde_json::json;
+
+use crate::errors::AppError;
 
 static KEYS: Lazy<Keys> = Lazy::new(|| {
     let secret = Alphanumeric.sample_string(&mut rand::rng(), 60);
@@ -35,7 +37,7 @@ impl Keys {
 }
 
 #[derive(Debug, Deserialize)]
-pub struct AuthPayload {
+struct AuthPayload {
     pub client_id: String,
     pub client_secret: String,
 }
@@ -50,32 +52,39 @@ impl<S> FromRequestParts<S> for Claims
 where
     S: Send + Sync,
 {
-    type Rejection = AuthError;
+    type Rejection = AppError;
 
     async fn from_request_parts(parts: &mut Parts, _: &S) -> Result<Self, Self::Rejection> {
         let jar = parts
             .extract::<CookieJar>()
             .await
-            .map_err(|_| AuthError::InvalidToken)?;
-        let cookie = jar.get("accessToken").ok_or(AuthError::InvalidToken)?;
+            .map_err(|_| AppError::InvalidToken)?;
+        let cookie = jar.get("accessToken").ok_or(AppError::InvalidToken)?;
         let token_data = decode::<Claims>(cookie.value(), &KEYS.decoding, &Validation::default())
-            .map_err(|_| AuthError::InvalidToken)?;
+            .map_err(|_| AppError::InvalidToken)?;
         let current = Utc::now().naive_utc().and_utc().timestamp() as usize;
         if current > token_data.claims.exp {
-            return Err(AuthError::InvalidToken);
+            return Err(AppError::InvalidToken);
         }
 
         Ok(token_data.claims)
     }
 }
 
-pub async fn login(
+pub fn auth_router() -> Router {
+    Router::new()
+        .route("/login", post(login))
+        .route("/session", get(get_session))
+        .route("/logout", get(logout))
+}
+
+async fn login(
     jar: CookieJar,
     Json(payload): Json<AuthPayload>,
-) -> Result<impl IntoResponse, AuthError> {
+) -> Result<impl IntoResponse, AppError> {
     tracing::info!("Request to login endpoint");
     if payload.client_id.is_empty() || payload.client_secret.is_empty() {
-        return Err(AuthError::MissingCredentials);
+        return Err(AppError::MissingCredentials);
     }
 
     if payload.client_id
@@ -84,7 +93,7 @@ pub async fn login(
             != env::var("CLIENT_SECRET")
                 .expect("An environment variable: 'CLIENT_SECRET' needs to be set")
     {
-        return Err(AuthError::WrongCredentials);
+        return Err(AppError::WrongCredentials);
     }
 
     let claims = Claims {
@@ -94,11 +103,11 @@ pub async fn login(
             .timestamp() as usize,
     };
     let token = encode(&Header::default(), &claims, &KEYS.encoding)
-        .map_err(|_| AuthError::TokenCreation)?;
+        .map_err(|_| AppError::InternalServer)?;
     let cookie = Cookie::build(("accessToken", token))
         .http_only(true)
         .max_age(Duration::hours(1))
-        //.secure(true) // Only over HTTPS
+        // .secure(true) // Only over HTTPS
         .same_site(SameSite::Strict)
         .path("/") // Send for all paths
         .build();
@@ -106,12 +115,12 @@ pub async fn login(
     Ok((jar.add(cookie), Json(claims)))
 }
 
-pub async fn get_session(claims: Claims) -> Json<Claims> {
+async fn get_session(claims: Claims) -> Json<Claims> {
     tracing::info!("User: {} expires: {}", claims.client_id, claims.exp);
     Json(claims)
 }
 
-pub async fn logout(jar: CookieJar, claims: Claims) -> impl IntoResponse {
+async fn logout(jar: CookieJar, claims: Claims) -> impl IntoResponse {
     tracing::info!("User: {} logged out", claims.client_id);
     let removal = Cookie::build(("accessToken", ""))
         .path("/")
@@ -120,27 +129,4 @@ pub async fn logout(jar: CookieJar, claims: Claims) -> impl IntoResponse {
         .build();
 
     jar.remove(removal)
-}
-
-pub enum AuthError {
-    InvalidToken,
-    WrongCredentials,
-    TokenCreation,
-    MissingCredentials,
-}
-
-impl IntoResponse for AuthError {
-    fn into_response(self) -> Response {
-        let (status, error_message) = match self {
-            AuthError::WrongCredentials => (StatusCode::UNAUTHORIZED, "Wrong credentials"),
-            AuthError::MissingCredentials => (StatusCode::BAD_REQUEST, "Missing credentials"),
-            AuthError::TokenCreation => (StatusCode::INTERNAL_SERVER_ERROR, "Token creation error"),
-            AuthError::InvalidToken => (StatusCode::BAD_REQUEST, "Invalid token"),
-        };
-        tracing::warn!("{} {}", status, error_message);
-        let body = Json(json!({
-            "error": error_message,
-        }));
-        (status, body).into_response()
-    }
 }

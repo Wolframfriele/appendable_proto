@@ -36,6 +36,7 @@ export class AuthService {
 
   readonly session = signal<AuthResponse | null>(null);
   readonly isLoggedIn = computed(() => this.session() !== null);
+  readonly loaded = signal<boolean>(false);
   readonly error = signal<string | null>(null);
 
   private checkSession$ = new Subject<void>();
@@ -48,7 +49,7 @@ export class AuthService {
       startWith(undefined),
       switchMap(() =>
         this.http
-          .get<AuthResponseJson>("/api/session")
+          .get<AuthResponseJson>("/api/auth/session")
           .pipe(catchError(() => of(null))),
       ),
       map(toOptionalAuthResponse),
@@ -57,7 +58,7 @@ export class AuthService {
       switchMap((authPayload) =>
         this.http
           .post<AuthResponseJson>(
-            "/api/login",
+            "/api/auth/login",
             mapToAuthPayloadJson(authPayload),
           )
           .pipe(
@@ -78,7 +79,7 @@ export class AuthService {
     ).pipe(
       switchMap(() =>
         this.http
-          .get<AuthResponseJson>("/api/logout")
+          .get<AuthResponseJson>("/api/auth/logout")
           // return EMPTY to not update the current session, since the logout did not succeed
           // this also avoids the redirects
           .pipe(catchError(() => EMPTY)),
@@ -88,6 +89,7 @@ export class AuthService {
     this.sessionEnded$.pipe(map(() => null)),
   ).pipe(
     tap((auth) => {
+      this.loaded.set(true);
       if (auth) {
         // emit sessionEnded on ended when expires date reached
         timer(auth.expires).subscribe(() => this.sessionEnded$.next());
@@ -115,7 +117,6 @@ export class AuthService {
 
   login(username: string, password: string) {
     this.login$.next({ clientId: username, clientSecret: password });
-    // why does this method seem to return two events? Or where is the second log coming from?
     return this.session$.pipe(skip(1), take(1));
   }
 

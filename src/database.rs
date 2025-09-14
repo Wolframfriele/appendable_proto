@@ -1,10 +1,10 @@
-use crate::models::{Block, Color, Entry, InsertResult, NextDataResponse, Project};
+use crate::models::{Block, Color, Entry, InsertResult, NextDataResponse};
 use anyhow::Result;
 use chrono::NaiveDateTime;
 use sqlx::sqlite::{SqlitePool, SqlitePoolOptions};
 
 pub struct Database {
-    pool: SqlitePool,
+    pub pool: SqlitePool,
 }
 
 impl Database {
@@ -311,84 +311,6 @@ pub async fn select_earlier_timestamp(
     .fetch_one(&db.pool)
     .await?;
     Ok(next_data)
-}
-
-pub async fn select_projects(db: &Database) -> Result<Vec<Project>> {
-    Ok(sqlx::query_as::<_, Project>(
-        "
-    SELECT
-        project_id,
-        name,
-        archived,
-        color
-    FROM projects;
-        ",
-    )
-    .fetch_all(&db.pool)
-    .await?)
-}
-
-pub async fn select_project(db: &Database, project_id: i64) -> Result<Project> {
-    Ok(sqlx::query_as::<_, Project>(
-        "
-    SELECT
-        project_id,
-        name,
-        archived,
-        color
-    FROM projects WHERE project_id = ?1;
-        ",
-    )
-    .bind(project_id)
-    .fetch_one(&db.pool)
-    .await?)
-}
-
-pub async fn insert_project(db: &Database, project: &Project) -> Result<i64> {
-    let new_project_id = sqlx::query_as::<_, InsertResult>(
-        "
-    INSERT INTO projects (
-        name,
-        archived,
-        color
-    ) VALUES (
-        ?1,
-        ?2,
-        ?3
-    ) RETURNING project_id AS id;
-        ",
-    )
-    .bind(&project.name)
-    .bind(project.archived)
-    .bind(&project.color)
-    .fetch_one(&db.pool)
-    .await?;
-    Ok(new_project_id.id)
-}
-
-pub async fn insert_new_project(db: &Database, project: Project) -> Result<Project> {
-    let new_project_id = insert_project(db, &project).await?;
-    Ok(select_project(db, new_project_id).await?)
-}
-
-pub async fn update_projects(db: &Database, project: Project) -> Result<Project> {
-    sqlx::query(
-        "
-    UPDATE projects SET
-        name=?2,
-        archived=?3,
-        color=?4,
-    WHERE entry_id=?1;
-        ",
-    )
-    .bind(project.project_id)
-    .bind(project.name)
-    .bind(project.archived)
-    .bind(project.color)
-    .execute(&db.pool)
-    .await?;
-
-    select_project(db, project.project_id).await
 }
 
 pub async fn select_colors(db: &Database) -> Result<Vec<Color>> {

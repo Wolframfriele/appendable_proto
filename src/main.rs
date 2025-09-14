@@ -1,9 +1,8 @@
-use anyhow::{anyhow, Error};
 use axum::{
     extract::{MatchedPath, Path, Query, State},
     http::{Request, StatusCode},
-    response::{IntoResponse, Response},
-    routing::{get, get_service, post, put},
+    response::IntoResponse,
+    routing::{get, get_service, put},
     Json, Router,
 };
 use chrono::{DateTime, Utc};
@@ -17,12 +16,13 @@ use tracing::info_span;
 use tracing_subscriber::{layer::SubscriberExt, util::SubscriberInitExt};
 
 use appendable_proto::{
-    auth::{get_session, login, logout, Claims},
+    auth::{auth_router, Claims},
     database::{
-        delete_blocks, insert_new_block, insert_new_project, select_blocks, select_colors,
-        select_entries, select_projects, update_block,
+        delete_blocks, insert_new_block, select_blocks, select_colors, select_entries, update_block,
     },
-    models::{Block, Color, Entry, NextDataResponse, Project},
+    errors::AppError,
+    models::{Block, Color, Entry, NextDataResponse},
+    projects::projects_router,
 };
 
 use appendable_proto::database::{
@@ -47,9 +47,6 @@ async fn main() {
     let state = Arc::new(Database::new().await.unwrap());
 
     let app = Router::new()
-        .route("/api/login", post(login))
-        .route("/api/session", get(get_session))
-        .route("/api/logout", get(logout))
         .route("/api/blocks", get(get_blocks).post(post_block))
         .route(
             "/api/blocks/{block_id}",
@@ -60,13 +57,14 @@ async fn main() {
             "/api/entries/{entry_id}",
             put(put_entry).delete(delete_entry_api),
         )
-        .route("/api/projects", get(get_projects))
-        .route("/api/projects/{project_id}", post(post_projects))
         .route("/api/colors", get(get_colors))
         .route(
             "/api/earlier_blocks/{last_data}",
             get(get_first_block_timestamp_before),
         )
+        .nest("/api/projects", projects_router())
+        .with_state(state)
+        .nest("/api/auth", auth_router())
         .layer(
             TraceLayer::new_for_http().make_span_with(|request: &Request<_>| {
                 let matched_path = request
@@ -81,7 +79,6 @@ async fn main() {
                 )
             }),
         )
-        .with_state(state)
         .fallback_service(get_service(
             ServeDir::new("/front_end/dist/appendable_fe/browser")
                 .append_index_html_on_directories(false)
@@ -105,7 +102,7 @@ async fn get_blocks(
     _: Claims,
     params: Query<RangeParams>,
     db: State<Arc<Database>>,
-) -> Result<Json<Vec<Block>>, NotFoundError> {
+) -> Result<Json<Vec<Block>>, AppError> {
     println!(
         "Getting blocks between: {:?} and {:?}",
         params.start, params.end
@@ -137,7 +134,7 @@ async fn post_block(
     _: Claims,
     db: State<Arc<Database>>,
     axum::extract::Json(payload): axum::extract::Json<Block>,
-) -> Result<Json<Block>, BadRequestError> {
+) -> Result<Json<Block>, AppError> {
     Ok(Json(insert_new_block(&db, payload).await?))
 }
 
@@ -146,11 +143,9 @@ async fn put_block(
     Path(block_id): Path<i64>,
     db: State<Arc<Database>>,
     axum::extract::Json(payload): axum::extract::Json<Block>,
-) -> Result<Json<Block>, BadRequestError> {
+) -> Result<Json<Block>, AppError> {
     if block_id != payload.block_id {
-        BadRequestError(anyhow!(
-            "The entry_id in the URL does not match the entry_id in the request body"
-        ));
+        return Err(AppError::BadRequest);
     }
     println!("Put block: {:?}", block_id);
     Ok(Json(update_block(&db, payload).await?))
@@ -160,7 +155,7 @@ async fn get_entries(
     _: Claims,
     params: Query<RangeParams>,
     db: State<Arc<Database>>,
-) -> Result<Json<Vec<Entry>>, NotFoundError> {
+) -> Result<Json<Vec<Entry>>, AppError> {
     println!(
         "Getting entries between: {:?} and {:?}",
         params.start, params.end
@@ -179,7 +174,7 @@ async fn post_entry(
     _: Claims,
     db: State<Arc<Database>>,
     axum::extract::Json(payload): axum::extract::Json<Entry>,
-) -> Result<Json<Entry>, BadRequestError> {
+) -> Result<Json<Entry>, AppError> {
     Ok(Json(insert_new_entry(&db, payload).await?))
 }
 
@@ -188,11 +183,9 @@ async fn put_entry(
     Path(entry_id): Path<i64>,
     db: State<Arc<Database>>,
     axum::extract::Json(payload): axum::extract::Json<Entry>,
-) -> Result<Json<Entry>, BadRequestError> {
+) -> Result<Json<Entry>, AppError> {
     if entry_id != payload.entry_id {
-        BadRequestError(anyhow!(
-            "The entry_id in the URL does not match the entry_id in the request body"
-        ));
+        return Err(AppError::BadRequest);
     }
     println!("Put entry: {:?}", entry_id);
     Ok(Json(update_entry(&db, payload).await?))
@@ -224,73 +217,16 @@ async fn get_first_block_timestamp_before(
     _: Claims,
     Path(last_data): Path<DateTime<Utc>>,
     db: State<Arc<Database>>,
-) -> Result<Json<NextDataResponse>, BadRequestError> {
+) -> Result<Json<NextDataResponse>, AppError> {
     println!("Get next entry before: {last_data}");
     Ok(Json(
         select_earlier_timestamp(&db, &last_data.naive_utc()).await?,
     ))
 }
 
-async fn get_projects(
-    _: Claims,
-    db: State<Arc<Database>>,
-) -> Result<Json<Vec<Project>>, BadRequestError> {
-    println!("Get projects");
-    Ok(Json(select_projects(&db).await?))
-}
-
-async fn post_projects(
-    _: Claims,
-    db: State<Arc<Database>>,
-    axum::extract::Json(payload): axum::extract::Json<Project>,
-) -> Result<Json<Project>, BadRequestError> {
-    println!("Post new project: {:?}", payload);
-    Ok(Json(insert_new_project(&db, payload).await?))
-}
-
-async fn get_colors(
-    _: Claims,
-    db: State<Arc<Database>>,
-) -> Result<Json<Vec<Color>>, BadRequestError> {
+async fn get_colors(_: Claims, db: State<Arc<Database>>) -> Result<Json<Vec<Color>>, AppError> {
     println!("Get colors");
     Ok(Json(select_colors(&db).await?))
-}
-
-// Error handling
-struct NotFoundError(Error);
-
-impl IntoResponse for NotFoundError {
-    fn into_response(self) -> Response {
-        (StatusCode::NOT_FOUND, format!("Not found: {}", self.0)).into_response()
-    }
-}
-
-// convert anyhow error into NotFoundError for fucntions that return `Result<_, Error>`
-impl<E> From<E> for NotFoundError
-where
-    E: Into<Error>,
-{
-    fn from(err: E) -> Self {
-        Self(err.into())
-    }
-}
-
-struct BadRequestError(Error);
-
-impl IntoResponse for BadRequestError {
-    fn into_response(self) -> Response {
-        (StatusCode::BAD_REQUEST, format!("Bad request: {}", self.0)).into_response()
-    }
-}
-
-// convert anyhow error into NotFoundError for fucntions that return `Result<_, Error>`
-impl<E> From<E> for BadRequestError
-where
-    E: Into<Error>,
-{
-    fn from(err: E) -> Self {
-        Self(err.into())
-    }
 }
 
 fn day_start() -> DateTime<Utc> {
