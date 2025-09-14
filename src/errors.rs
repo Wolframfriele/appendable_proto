@@ -4,7 +4,9 @@ use axum::{
     Json,
 };
 use serde_json::json;
+use sqlx::migrate::MigrateError;
 
+#[derive(Debug)]
 pub enum AppError {
     BadRequest,
     NotFound,
@@ -45,6 +47,12 @@ impl From<sqlx::Error> for AppError {
 
 impl From<anyhow::Error> for AppError {
     fn from(_: anyhow::Error) -> Self {
+        AppError::InternalServer
+    }
+}
+
+impl From<MigrateError> for AppError {
+    fn from(_: MigrateError) -> Self {
         AppError::InternalServer
     }
 }

@@ -1,4 +1,4 @@
-use chrono::{DateTime, Utc};
+use chrono::{DateTime, NaiveDateTime, Utc};
 use serde::{Deserialize, Serialize};
 use sqlx::{sqlite::SqliteRow, FromRow, Row};
 
@@ -81,4 +81,38 @@ pub struct InsertResult {
 #[derive(FromRow, Serialize, Deserialize, Debug)]
 pub struct NextDataResponse {
     pub block_timestamp: DateTime<Utc>,
+}
+
+#[derive(Deserialize)]
+pub struct RangeParams {
+    start: Option<DateTime<Utc>>,
+    end: Option<DateTime<Utc>>,
+}
+
+impl RangeParams {
+    pub fn get_start(&self) -> NaiveDateTime {
+        self.start.unwrap_or(day_start()).naive_utc()
+    }
+
+    pub fn get_end(&self) -> NaiveDateTime {
+        self.end.unwrap_or(day_end()).naive_utc()
+    }
+}
+
+fn day_start() -> DateTime<Utc> {
+    let now = Utc::now();
+    now.date_naive()
+        .and_hms_opt(0, 0, 0)
+        .unwrap()
+        .and_local_timezone(Utc)
+        .unwrap()
+}
+
+fn day_end() -> DateTime<Utc> {
+    let now = Utc::now();
+    now.date_naive()
+        .and_hms_opt(23, 59, 59)
+        .unwrap()
+        .and_local_timezone(Utc)
+        .unwrap()
 }

@@ -1,12 +1,4 @@
-use axum::{
-    extract::{MatchedPath, Path, Query, State},
-    http::{Request, StatusCode},
-    response::IntoResponse,
-    routing::{get, get_service, put},
-    Json, Router,
-};
-use chrono::{DateTime, Utc};
-use serde::Deserialize;
+use axum::{extract::MatchedPath, http::Request, routing::get_service, Router};
 use std::sync::Arc;
 use tower_http::{
     services::{ServeDir, ServeFile},
@@ -16,18 +8,11 @@ use tracing::info_span;
 use tracing_subscriber::{layer::SubscriberExt, util::SubscriberInitExt};
 
 use appendable_proto::{
-    auth::{auth_router, Claims},
-    database::{
-        delete_blocks, insert_new_block, select_blocks, select_colors, select_entries, update_block,
-    },
-    errors::AppError,
-    models::{Block, Color, Entry, NextDataResponse},
+    auth::auth_router, blocks::blocks_router, colors::colors_router, entries::entries_router,
     projects::projects_router,
 };
 
-use appendable_proto::database::{
-    delete_entry, insert_new_entry, select_earlier_timestamp, update_entry, Database,
-};
+use appendable_proto::database::Database;
 
 #[tokio::main]
 async fn main() {
@@ -47,22 +32,10 @@ async fn main() {
     let state = Arc::new(Database::new().await.unwrap());
 
     let app = Router::new()
-        .route("/api/blocks", get(get_blocks).post(post_block))
-        .route(
-            "/api/blocks/{block_id}",
-            put(put_block).delete(delete_block_api),
-        )
-        .route("/api/entries", get(get_entries).post(post_entry))
-        .route(
-            "/api/entries/{entry_id}",
-            put(put_entry).delete(delete_entry_api),
-        )
-        .route("/api/colors", get(get_colors))
-        .route(
-            "/api/earlier_blocks/{last_data}",
-            get(get_first_block_timestamp_before),
-        )
+        .nest("/api/blocks", blocks_router())
+        .nest("/api/entries", entries_router())
         .nest("/api/projects", projects_router())
+        .nest("/api/colors", colors_router())
         .with_state(state)
         .nest("/api/auth", auth_router())
         .layer(
@@ -90,159 +63,4 @@ async fn main() {
     let listener = tokio::net::TcpListener::bind("0.0.0.0:3000").await.unwrap();
     tracing::info!("server listening on {}", listener.local_addr().unwrap());
     axum::serve(listener, app).await.unwrap();
-}
-
-#[derive(Deserialize)]
-struct RangeParams {
-    start: Option<DateTime<Utc>>,
-    end: Option<DateTime<Utc>>,
-}
-
-async fn get_blocks(
-    _: Claims,
-    params: Query<RangeParams>,
-    db: State<Arc<Database>>,
-) -> Result<Json<Vec<Block>>, AppError> {
-    println!(
-        "Getting blocks between: {:?} and {:?}",
-        params.start, params.end
-    );
-    Ok(Json(
-        select_blocks(
-            &db,
-            params.start.unwrap_or(day_start()).naive_utc(),
-            params.end.unwrap_or(day_end()).naive_utc(),
-        )
-        .await,
-    ))
-}
-
-async fn delete_block_api(
-    _: Claims,
-    Path(block_id): Path<i64>,
-    db: State<Arc<Database>>,
-) -> impl IntoResponse {
-    println!("Delete block: {}", block_id);
-    if delete_blocks(&db, block_id).await {
-        (StatusCode::NO_CONTENT, "Block deleted")
-    } else {
-        (StatusCode::CONFLICT, "The block could not be deleted")
-    }
-}
-
-async fn post_block(
-    _: Claims,
-    db: State<Arc<Database>>,
-    axum::extract::Json(payload): axum::extract::Json<Block>,
-) -> Result<Json<Block>, AppError> {
-    Ok(Json(insert_new_block(&db, payload).await?))
-}
-
-async fn put_block(
-    _: Claims,
-    Path(block_id): Path<i64>,
-    db: State<Arc<Database>>,
-    axum::extract::Json(payload): axum::extract::Json<Block>,
-) -> Result<Json<Block>, AppError> {
-    if block_id != payload.block_id {
-        return Err(AppError::BadRequest);
-    }
-    println!("Put block: {:?}", block_id);
-    Ok(Json(update_block(&db, payload).await?))
-}
-
-async fn get_entries(
-    _: Claims,
-    params: Query<RangeParams>,
-    db: State<Arc<Database>>,
-) -> Result<Json<Vec<Entry>>, AppError> {
-    println!(
-        "Getting entries between: {:?} and {:?}",
-        params.start, params.end
-    );
-    Ok(Json(
-        select_entries(
-            &db,
-            params.start.unwrap_or(day_start()).naive_utc(),
-            params.end.unwrap_or(day_end()).naive_utc(),
-        )
-        .await,
-    ))
-}
-
-async fn post_entry(
-    _: Claims,
-    db: State<Arc<Database>>,
-    axum::extract::Json(payload): axum::extract::Json<Entry>,
-) -> Result<Json<Entry>, AppError> {
-    Ok(Json(insert_new_entry(&db, payload).await?))
-}
-
-async fn put_entry(
-    _: Claims,
-    Path(entry_id): Path<i64>,
-    db: State<Arc<Database>>,
-    axum::extract::Json(payload): axum::extract::Json<Entry>,
-) -> Result<Json<Entry>, AppError> {
-    if entry_id != payload.entry_id {
-        return Err(AppError::BadRequest);
-    }
-    println!("Put entry: {:?}", entry_id);
-    Ok(Json(update_entry(&db, payload).await?))
-}
-
-#[derive(Deserialize)]
-struct DeleteEntriesParams {
-    with_children: Option<bool>,
-}
-
-async fn delete_entry_api(
-    _: Claims,
-    Path(entry_id): Path<i64>,
-    params: Query<DeleteEntriesParams>,
-    db: State<Arc<Database>>,
-) -> impl IntoResponse {
-    println!(
-        "Delete entry: {} with_children: {:?}",
-        entry_id, params.with_children
-    );
-    if delete_entry(&db, entry_id, params.with_children.unwrap_or(false)).await {
-        (StatusCode::NO_CONTENT, "Entry deleted")
-    } else {
-        (StatusCode::CONFLICT, "The entry could not be deleted")
-    }
-}
-
-async fn get_first_block_timestamp_before(
-    _: Claims,
-    Path(last_data): Path<DateTime<Utc>>,
-    db: State<Arc<Database>>,
-) -> Result<Json<NextDataResponse>, AppError> {
-    println!("Get next entry before: {last_data}");
-    Ok(Json(
-        select_earlier_timestamp(&db, &last_data.naive_utc()).await?,
-    ))
-}
-
-async fn get_colors(_: Claims, db: State<Arc<Database>>) -> Result<Json<Vec<Color>>, AppError> {
-    println!("Get colors");
-    Ok(Json(select_colors(&db).await?))
-}
-
-fn day_start() -> DateTime<Utc> {
-    let now = Utc::now();
-    now.date_naive()
-        .and_hms_opt(0, 0, 0)
-        .unwrap()
-        .and_local_timezone(Utc)
-        .unwrap()
-}
-
-fn day_end() -> DateTime<Utc> {
-    let now = Utc::now();
-    now.date_naive()
-        .and_hms_opt(23, 59, 59)
-        .unwrap()
-        .and_local_timezone(Utc)
-        .unwrap()
 }

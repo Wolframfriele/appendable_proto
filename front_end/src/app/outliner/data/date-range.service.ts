@@ -41,7 +41,7 @@ export class DateRangeService {
         concatMap(() => {
           return this.http
             .get<NextDataJson>(
-              `/api/earlier_blocks/${this.state().start.toISOString()}`,
+              `/api/blocks/next_before/${this.state().start.toISOString()}`,
             )
             .pipe(catchError((err) => this.handleError(err)));
         }),
