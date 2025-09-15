@@ -41,7 +41,7 @@ import { ProjectComponent } from "./ui/project/project.component";
     table {
       background: var(--background-deep);
       border-spacing: 0 1rem;
-      width: 50rem;
+      width: 100%;
       text-align: center;
       border-radius: 5px;
       margin-top: 2rem;

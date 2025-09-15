@@ -44,7 +44,7 @@ import { Entry } from "../../../model/entry.model";
   `,
   styles: `
     :host {
-      width: 50rem;
+      width: 90%;
       margin-bottom: 1rem;
       background: var(--background-deep);
       border-left: 5px solid var(--background-deep);
@@ -57,7 +57,7 @@ import { Entry } from "../../../model/entry.model";
     }
 
     .block-text {
-      width: 45rem;
+      width: 90%;
     }
 
     .block-title {
@@ -72,6 +72,7 @@ import { Entry } from "../../../model/entry.model";
     }
 
     .line {
+      display: none;
       border-left: 1px solid var(--secondary-text);
       margin-top: 1rem;
       margin-left: 1.3rem;
@@ -79,6 +80,7 @@ import { Entry } from "../../../model/entry.model";
     }
 
     .dot {
+      display: none;
       height: 0.5rem;
       width: 0.5rem;
       background-color: var(--secondary-text);
@@ -101,6 +103,16 @@ import { Entry } from "../../../model/entry.model";
     ul {
       list-style: none;
       padding: 0;
+    }
+
+    @media (min-width: 29rem) {
+      .line {
+        display: block;
+      }
+
+      .dot {
+        display: block;
+      }
     }
   `,
 })

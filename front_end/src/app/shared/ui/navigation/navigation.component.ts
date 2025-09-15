@@ -40,6 +40,7 @@ import { Command, CommandService } from "../../data/command.service";
     }
     .pages {
       display: flex;
+      flex-wrap: wrap;
       gap: 0.5rem;
       list-style: none;
       margin: 0.2rem;

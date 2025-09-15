@@ -33,6 +33,7 @@ import { octFilter } from "@ng-icons/octicons";
 
     .filter-options {
       display: flex;
+      flex-wrap: wrap;
       gap: 0.5rem;
       list-style: none;
       margin: 0.2rem;

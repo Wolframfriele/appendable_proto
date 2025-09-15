@@ -28,7 +28,11 @@ import { StatusBarComponent } from "../../outliner/ui/status-bar/status-bar.comp
       />
     }
 
-    <router-outlet></router-outlet>
+    <div class="wrapper">
+      <div class="content">
+        <router-outlet></router-outlet>
+      </div>
+    </div>
 
     <app-status-bar />
   `,
@@ -39,6 +43,18 @@ import { StatusBarComponent } from "../../outliner/ui/status-bar/status-bar.comp
       left: 50%;
       transform: translate(-50%, 0);
       --search-box-width: 30rem;
+    }
+
+    .wrapper {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+    }
+
+    @media (min-width: 52rem) {
+      .content {
+        width: 50rem;
+      }
     }
   `,
 })

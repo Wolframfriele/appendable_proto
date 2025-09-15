@@ -90,7 +90,6 @@ import { ViewportScroller } from "@angular/common";
   styles: `
     .text-elements-container {
       display: flex;
-      flex-wrap: wrap;
       justify-content: flex-start;
       align-items: stretch;
       gap: 0.5rem;
@@ -162,7 +161,7 @@ import { ViewportScroller } from "@angular/common";
 
       .text-container {
         padding: 0.1rem 0.1rem;
-        min-height: 1.5rem;
+        min-height: 1.25rem;
         border-radius: 5px;
 
         .duration-component {
@@ -170,7 +169,7 @@ import { ViewportScroller } from "@angular/common";
         }
 
         .text {
-          display: inline;
+          min-height: 1.25rem;
           outline: none;
         }
       }

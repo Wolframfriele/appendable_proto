@@ -60,8 +60,6 @@ import { Router } from "@angular/router";
     }
 
     .card {
-      width: 30rem;
-      height: 15rem;
       background: var(--background-deep);
       border-radius: 5px;
       display: flex;
@@ -96,7 +94,7 @@ import { Router } from "@angular/router";
     }
 
     .input-field {
-      width: var(--search-box-width, 20rem);
+      width: var(--search-box-width, 15rem);
       height: 2rem;
       background: var(--background);
       color: var(--text-color);
@@ -118,6 +116,12 @@ import { Router } from "@angular/router";
     .error {
       color: var(--red);
       margin: 0;
+    }
+
+    @media (min-width: 27rem) {
+      .input-field {
+        width: var(--search-box-width, 20rem);
+      }
     }
   `,
 })
