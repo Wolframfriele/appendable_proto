@@ -57,7 +57,7 @@ pub struct Project {
     pub project_id: i64,
     pub name: String,
     pub archived: bool,
-    pub color: i64,
+    pub color: Option<i64>,
 }
 
 #[derive(FromRow, Serialize, Deserialize, Debug)]

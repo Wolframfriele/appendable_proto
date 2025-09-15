@@ -3,7 +3,7 @@ use std::sync::Arc;
 use anyhow::Result;
 use axum::{
     extract::State,
-    routing::{get, post},
+    routing::{get, put},
     Json, Router,
 };
 
@@ -16,8 +16,8 @@ use crate::{
 
 pub fn projects_router() -> Router<Arc<Database>> {
     Router::new()
-        .route("/", get(get_projects))
-        .route("/{project_id}", post(post_project).put(put_project))
+        .route("/", get(get_projects).post(post_project))
+        .route("/{project_id}", put(put_project))
 }
 
 async fn get_projects(_: Claims, db: State<Arc<Database>>) -> Result<Json<Vec<Project>>, AppError> {
@@ -97,8 +97,8 @@ async fn put_project(
     UPDATE projects SET
         name=?2,
         archived=?3,
-        color=?4,
-    WHERE entry_id=?1;
+        color=?4
+    WHERE project_id=?1;
         ",
     )
     .bind(project.project_id)

@@ -12,7 +12,11 @@ import { Router } from "@angular/router";
     @if (this.authService.loaded()) {
       <div class="card">
         <form [formGroup]="form">
-          <legend>Login</legend>
+          <div class="title">
+            <img src="appendable_logo.svg" class="logo" />
+            <legend>Sign-in to Appendable</legend>
+          </div>
+
           <div class="form-field">
             <input
               name="username"
@@ -40,7 +44,7 @@ import { Router } from "@angular/router";
           }
           <div class="form-buttons">
             <button class="button button-primary" (click)="login()">
-              Login
+              Log in
             </button>
           </div>
         </form>
@@ -50,7 +54,7 @@ import { Router } from "@angular/router";
   styles: `
     :host {
       position: absolute;
-      top: 40%;
+      top: 25%;
       left: 50%;
       transform: translate(-50%, 0);
     }
@@ -67,9 +71,22 @@ import { Router } from "@angular/router";
       padding: 3rem;
     }
 
+    .title {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+
+    .logo {
+      width: 3.5rem;
+      height: 3.5rem;
+      display: inline-block;
+    }
+
     legend {
       margin: 2rem 0;
       font-size: 1.5rem;
+      display: inline-block;
     }
 
     button {
