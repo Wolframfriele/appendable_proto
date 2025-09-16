@@ -161,7 +161,7 @@ import { ViewportScroller } from "@angular/common";
 
       .text-container {
         padding: 0.1rem 0.1rem;
-        min-height: 1.25rem;
+        min-height: 1.75rem;
         border-radius: 5px;
 
         .duration-component {
@@ -171,6 +171,7 @@ import { ViewportScroller } from "@angular/common";
         .text {
           min-height: 1.25rem;
           outline: none;
+          display: inline list-item;
         }
       }
     }
