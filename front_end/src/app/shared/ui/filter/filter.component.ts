@@ -14,9 +14,11 @@ import { octFilter } from "@ng-icons/octicons";
         <li>Work</li>
         <li>Not Done</li>
         <li>+</li>
-        <ng-icon name="octFilter" class="icon" />
       </ul>
     </div>
+    <button class="icon">
+      <ng-icon name="octFilter" />
+    </button>
   `,
   styles: `
     :host {
@@ -27,7 +29,7 @@ import { octFilter } from "@ng-icons/octicons";
     }
 
     .custom-filters {
-      display: flex;
+      display: none;
       align-items: center;
     }
 
@@ -57,14 +59,24 @@ import { octFilter } from "@ng-icons/octicons";
     }
 
     .icon {
+      /*display: none;*/
+      margin: 0.5rem;
       background-color: var(--lighter-black);
-      border-radius: 5px;
+      color: var(--secondary-text);
       padding: 0.4rem 0.6rem;
-      margin: 0;
+      border: none;
+      border-radius: 5px;
+      font-size: 0.9rem;
     }
 
     .icon:hover {
       color: var(--text-color);
+    }
+
+    @media (min-width: 52rem) {
+      .custom-filters {
+        display: flex;
+      }
     }
   `,
   viewProviders: [provideIcons({ octFilter })],

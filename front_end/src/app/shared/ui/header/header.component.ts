@@ -8,7 +8,7 @@ import { NavigationComponent } from "../navigation/navigation.component";
   imports: [NavigationComponent, FilterComponent],
   template: `
     <app-navigation />
-    <app-filter class="filter" />
+    <app-filter />
   `,
   styles: `
     :host {
@@ -16,10 +16,6 @@ import { NavigationComponent } from "../navigation/navigation.component";
       position: sticky;
       top: 0;
       justify-content: space-between;
-    }
-
-    .filter {
-      margin: 0.3rem 0.3rem;
     }
   `,
 })
