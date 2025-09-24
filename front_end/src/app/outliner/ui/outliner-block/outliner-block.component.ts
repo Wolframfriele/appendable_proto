@@ -159,7 +159,7 @@ export class OutlinerBlockComponent {
       projectName: selectedProject.name,
     }));
     if (this.blockModel() !== this.block()) {
-      this.blockService.edit$.next(this.blockModel());
+      this.blockService.edit(this.blockModel());
     }
   }
 

@@ -13,6 +13,7 @@ import {
   Subject,
   switchMap,
   take,
+  tap,
 } from "rxjs";
 import { ProjectJson } from "../../model/project.interface";
 import { mapToProjectJson, mapToProjects } from "../../model/project.mapper";
@@ -67,6 +68,10 @@ export class ProjectService {
     ),
   ).pipe(
     startWith(null),
+    tap(() => {
+      this.loaded.set(true);
+      this.error.set(null);
+    }),
     switchMap(() =>
       this.http
         .get<ProjectJson[]>(`/api/projects`)

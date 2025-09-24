@@ -150,27 +150,18 @@ export default class OutlinerComponent {
   }
 
   private addNewBlock() {
-    this.blockService.add$.next({
-      id: 0,
-      text: "",
-      project: undefined,
-      projectName: undefined,
-      start: new Date(),
-      end: undefined,
-      duration: 0,
-      tags: [],
-    });
+    this.blockService.add();
     this.setActiveBlock(0);
   }
 
   private deleteActiveBlock() {
-    this.blockService.remove$.next({ id: this.activeBlock.id });
+    this.blockService.remove({ id: this.activeBlock.id });
   }
 
   private endActiveBlock() {
     let activeBlock = this.activeBlock;
     activeBlock.end = new Date();
-    this.blockService.edit$.next(activeBlock);
+    this.blockService.edit(activeBlock);
   }
 
   private addNewEntry() {
