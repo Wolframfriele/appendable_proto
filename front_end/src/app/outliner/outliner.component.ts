@@ -36,9 +36,7 @@ import { Entry } from "../model/entry.model";
       <p>Problem loading entries</p>
     }
     @if (!dateRangeService.error()) {
-      <button (click)="dateRangeService.expand$.next(undefined)">
-        Load more entries
-      </button>
+      <button (click)="dateRangeService.expand()">Load more entries</button>
     }
   `,
   styles: `
@@ -144,7 +142,7 @@ export default class OutlinerComponent {
       this.state.activeBlockIdx.update((current) => current + 1);
       return true;
     } else {
-      this.dateRangeService.expand$.next(undefined);
+      this.dateRangeService.expand();
     }
     return false;
   }

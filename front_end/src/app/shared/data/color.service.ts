@@ -1,11 +1,6 @@
 import { HttpClient } from "@angular/common/http";
 import { inject, Injectable, signal } from "@angular/core";
-import {
-  Color,
-  ColorJson,
-  mapToColor,
-  mapToColors,
-} from "../../model/color.model";
+import { Color, ColorJson, mapToColors } from "../../model/color.model";
 import { catchError, EMPTY, map } from "rxjs";
 
 // This service breaks the pattern, since it is a fetch once and then forget about it

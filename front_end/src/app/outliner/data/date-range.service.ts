@@ -1,13 +1,16 @@
 import { HttpClient } from "@angular/common/http";
-import { computed, inject, Injectable, signal } from "@angular/core";
-import { takeUntilDestroyed, toObservable } from "@angular/core/rxjs-interop";
-import { catchError, concatMap, EMPTY, map, startWith, Subject } from "rxjs";
-
-interface DateRangeState {
-  start: Date;
-  end: Date;
-  error: String | null;
-}
+import { inject, Injectable, signal } from "@angular/core";
+import { takeUntilDestroyed } from "@angular/core/rxjs-interop";
+import {
+  catchError,
+  concatMap,
+  EMPTY,
+  map,
+  Observable,
+  startWith,
+  Subject,
+  take,
+} from "rxjs";
 
 interface NextDataJson {
   block_timestamp: string;
@@ -19,42 +22,34 @@ interface NextDataJson {
 export class DateRangeService {
   private http = inject(HttpClient);
 
-  // state
-  private state = signal<DateRangeState>({
-    start: this.getTodayStart(),
-    end: this.getTodayEnd(),
-    error: null,
-  });
+  readonly start = signal(this.getTodayStart());
+  readonly end = signal(this.getTodayEnd());
+  readonly error = signal(null);
 
-  start = computed(() => this.state().start);
-  end = computed(() => this.state().end);
-  error = computed(() => this.state().error);
+  private expand$ = new Subject<void>();
 
-  expand$ = new Subject<void>();
-
-  dateRangeExpanded$ = toObservable(this.state);
+  readonly dateRangeExpanded$: Observable<Date> = this.expand$.pipe(
+    startWith(undefined),
+    concatMap(() => {
+      return this.http
+        .get<NextDataJson>(
+          `/api/blocks/next_before/${this.start().toISOString()}`,
+        )
+        .pipe(catchError((err) => this.handleError(err)));
+    }),
+    map((response) => this.mapToNextDate(response)),
+    takeUntilDestroyed(),
+  );
 
   constructor() {
-    this.expand$
-      .pipe(
-        startWith(undefined),
-        concatMap(() => {
-          return this.http
-            .get<NextDataJson>(
-              `/api/blocks/next_before/${this.state().start.toISOString()}`,
-            )
-            .pipe(catchError((err) => this.handleError(err)));
-        }),
-        map((response) => this.mapToNextDate(response)),
-        takeUntilDestroyed(),
-      )
-      .subscribe((response) =>
-        this.state.set({
-          start: response,
-          end: this.getTodayEnd(),
-          error: null,
-        }),
-      );
+    this.dateRangeExpanded$.subscribe((newStartDate) =>
+      this.start.set(newStartDate),
+    );
+  }
+
+  public expand(): Observable<Date> {
+    this.expand$.next(undefined);
+    return this.dateRangeExpanded$.pipe(take(1));
   }
 
   private getTodayStart(): Date {
@@ -90,7 +85,7 @@ export class DateRangeService {
   }
 
   private handleError(err: any) {
-    this.state.update((state) => ({ ...state, error: err }));
+    this.error.set(err);
     return EMPTY;
   }
 }

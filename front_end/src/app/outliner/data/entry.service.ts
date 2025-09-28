@@ -4,7 +4,6 @@ import {
   catchError,
   concatMap,
   EMPTY,
-  filter,
   map,
   merge,
   Observable,
@@ -14,7 +13,7 @@ import {
   take,
 } from "rxjs";
 import { HttpClient, HttpHeaders } from "@angular/common/http";
-import { takeUntilDestroyed, toObservable } from "@angular/core/rxjs-interop";
+import { takeUntilDestroyed } from "@angular/core/rxjs-interop";
 import { Entry, RemoveEntry } from "../../model/entry.model";
 import { mapToEntries, mapToJsonEntry } from "../../model/entry.mapper";
 import { EntryJson } from "../../model/entry.interface";
