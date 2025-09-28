@@ -164,7 +164,7 @@ export default class OutlinerComponent {
 
   private addNewEntry() {
     this.entryService
-      .awaitAdd({
+      .add({
         id: 0,
         parent: this.activeBlock.id,
         nesting: 0,
@@ -192,7 +192,7 @@ export default class OutlinerComponent {
       activeEntryIsLastInBlock = true;
     }
     if (activeEntry) {
-      this.entryService.remove$.next({ id: activeEntry.id });
+      this.entryService.remove(activeEntry.id);
       if (activeEntryIsLastInBlock) {
         this.state.activeEntryIdx.update((current) => current - 1);
       }

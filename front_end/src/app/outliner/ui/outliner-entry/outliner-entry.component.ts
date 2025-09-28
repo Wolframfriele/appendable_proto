@@ -301,13 +301,13 @@ export class OutlinerEntryComponent {
 
   updateEntryWhenDirty() {
     if (this.entryDirty) {
-      this.entryService.edit$.next(this.entryModel());
+      this.entryService.edit(this.entryModel());
     }
   }
 
   onCheckboxToggled(newValue: boolean) {
     this.entryModel.update((entry) => ({ ...entry, isDone: newValue }));
-    this.entryService.edit$.next(this.entryModel());
+    this.entryService.edit(this.entryModel());
   }
 
   onTodoToggled() {
@@ -315,11 +315,11 @@ export class OutlinerEntryComponent {
       ...entry,
       showTodo: !entry.showTodo,
     }));
-    this.entryService.edit$.next(this.entryModel());
+    this.entryService.edit(this.entryModel());
   }
 
   onDeleteEntry() {
-    this.entryService.remove$.next({ id: this.entry().id });
+    this.entryService.remove(this.entry().id);
   }
 
   indentEntry() {
