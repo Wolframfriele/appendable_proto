@@ -131,7 +131,7 @@ export class ProjectComponent {
       this.textBox.nativeElement.focus();
     });
     if (!this.keyboardService.isInsertMode()) {
-      this.commandService.executeCommand$.next(Command.SWITCH_TO_INSERT_MODE);
+      this.commandService.execute(Command.SWITCH_TO_INSERT_MODE);
     }
     if (this.projectState.activeProjectIdx() !== this.idx()) {
       this.projectState.activeProjectIdx.set(this.idx());

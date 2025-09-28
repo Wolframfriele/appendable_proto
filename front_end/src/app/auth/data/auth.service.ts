@@ -73,7 +73,7 @@ export class AuthService {
     ),
     merge(
       this.logout$,
-      this.commandService.executeCommand$.pipe(
+      this.commandService.executed$.pipe(
         filter((c) => c === Command.LOGOUT),
         map(() => null),
       ),
@@ -94,7 +94,7 @@ export class AuthService {
       if (auth) {
         // emit sessionEnded on ended when expires date reached
         timer(auth.expires).subscribe(() => this.sessionEnded$.next());
-        this.commandService.executeCommand$.next(Command.SWITCH_TO_NORMAL_MODE);
+        this.commandService.execute(Command.SWITCH_TO_NORMAL_MODE);
         if (this.redirectUrl) {
           this.router.navigateByUrl(this.redirectUrl);
         } else {
@@ -102,9 +102,7 @@ export class AuthService {
         }
         this.error.set(null);
       } else {
-        this.commandService.executeCommand$.next(
-          Command.SWITCH_TO_DEFAULT_MODE,
-        );
+        this.commandService.execute(Command.SWITCH_TO_DEFAULT_MODE);
         this.router.navigateByUrl("/login");
       }
       return auth;

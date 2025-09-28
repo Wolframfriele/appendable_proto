@@ -59,7 +59,7 @@ export class ProjectsComponent {
   colorService = inject(ColorService);
 
   constructor() {
-    this.commandService.executeCommand$
+    this.commandService.executed$
       .pipe(takeUntilDestroyed())
       .subscribe((command) => {
         switch (command) {
@@ -100,7 +100,7 @@ export class ProjectsComponent {
       // In the entries, I'm just assuming that a new entry will always be the last element, but
       // for projects that might not be the case (If I allow the user to click on datatable headers to change sorting)
       this.state.activeProjectIdx.set(projects.length - 1);
-      this.commandService.executeCommand$.next(Command.SWITCH_TO_INSERT_MODE);
+      this.commandService.execute(Command.SWITCH_TO_INSERT_MODE);
     });
   }
 

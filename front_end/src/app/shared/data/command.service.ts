@@ -1,5 +1,5 @@
-import { Injectable } from "@angular/core";
-import { Subject } from "rxjs";
+import { Injectable, signal } from "@angular/core";
+import { Observable, Subject } from "rxjs";
 
 export enum Command {
   SWITCH_TO_NORMAL_MODE = "navigation: switch to normal mode",
@@ -37,18 +37,26 @@ export enum Command {
   providedIn: "root",
 })
 export class CommandService {
-  executeCommand$ = new Subject<Command>();
+  private executedCommands$ = new Subject<Command>();
+
+  public get executed$(): Observable<Command> {
+    return this.executedCommands$;
+  }
 
   public get possibleCommands(): string[] {
     return Object.values(Command);
   }
 
-  public executeCommandFromValue(commandValue: string) {
+  public execute(command: Command) {
+    this.executedCommands$.next(command);
+  }
+
+  public executeFromValue(commandValue: string) {
     const command = Object.values(Command).find(
       (value) => value == commandValue,
     ) as Command | undefined;
     if (command) {
-      this.executeCommand$.next(command);
+      this.executedCommands$.next(command);
     }
   }
 }

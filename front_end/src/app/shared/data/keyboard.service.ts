@@ -1,5 +1,5 @@
-import { computed, inject, Injectable, signal } from "@angular/core";
-import { fromEvent, map } from "rxjs";
+import { inject, Injectable, signal } from "@angular/core";
+import { fromEvent } from "rxjs";
 import { Command, CommandService } from "./command.service";
 import { NormalModeMap } from "./keymaps/normal-mode.map";
 import { CommandModeMap } from "./keymaps/command-mode.map";
@@ -14,58 +14,50 @@ export enum ControlMode {
   DEFAULT_MODE = "Default",
 }
 
-interface State {
-  activeControlMode: ControlMode;
-}
-
 @Injectable({
   providedIn: "root",
 })
 export class KeyboardService {
   private commandService = inject(CommandService);
 
-  private state = signal<State>({
-    activeControlMode: ControlMode.NORMAL_MODE,
-  });
-
-  activeControlMode = computed(() => this.state().activeControlMode);
+  readonly activeControlMode = signal<ControlMode>(ControlMode.NORMAL_MODE);
 
   private keyboard$ = fromEvent<KeyboardEvent>(document, "keydown").pipe();
 
   constructor() {
-    this.commandService.executeCommand$.subscribe((command) => {
+    this.commandService.executed$.subscribe((command) => {
       console.log(command);
       switch (command) {
         case Command.SWITCH_TO_NORMAL_MODE:
           (document.activeElement as HTMLElement).blur();
-          this.state.set({ activeControlMode: ControlMode.NORMAL_MODE });
+          this.activeControlMode.set(ControlMode.NORMAL_MODE);
           break;
         case Command.SWITCH_TO_INSERT_MODE:
-          this.state.set({ activeControlMode: ControlMode.INSERT_MODE });
+          this.activeControlMode.set(ControlMode.INSERT_MODE);
           break;
         case Command.SWITCH_TO_VISUAL_MODE:
           (document.activeElement as HTMLElement).blur();
-          this.state.set({ activeControlMode: ControlMode.VISUAL_MODE });
+          this.activeControlMode.set(ControlMode.VISUAL_MODE);
           break;
         case Command.SWITCH_TO_COMMAND_MODE:
           (document.activeElement as HTMLElement).blur();
-          this.state.set({ activeControlMode: ControlMode.COMMAND_MODE });
+          this.activeControlMode.set(ControlMode.COMMAND_MODE);
           break;
         case Command.SWITCH_TO_DEFAULT_MODE:
-          this.state.set({ activeControlMode: ControlMode.DEFAULT_MODE });
+          this.activeControlMode.set(ControlMode.DEFAULT_MODE);
           break;
       }
     });
 
     this.keyboard$.subscribe((keyEvent) => {
       const keyCombo = this.keyComboStringFromKeyEvent(keyEvent);
-      console.log(keyCombo);
+      // console.log(keyCombo);
       switch (this.activeControlMode()) {
         case ControlMode.NORMAL_MODE:
           const normalKeymapping = NormalModeMap.get(keyCombo);
           if (normalKeymapping) {
             keyEvent.preventDefault();
-            this.commandService.executeCommand$.next(normalKeymapping);
+            this.commandService.execute(normalKeymapping);
           }
           break;
 
@@ -73,7 +65,7 @@ export class KeyboardService {
           const insertKeymapping = InsertModeMap.get(keyCombo);
           if (insertKeymapping) {
             keyEvent.preventDefault();
-            this.commandService.executeCommand$.next(insertKeymapping);
+            this.commandService.execute(insertKeymapping);
           }
           break;
 
@@ -81,7 +73,7 @@ export class KeyboardService {
           const visualKeymapping = VisualModeMap.get(keyCombo);
           if (visualKeymapping) {
             keyEvent.preventDefault();
-            this.commandService.executeCommand$.next(visualKeymapping);
+            this.commandService.execute(visualKeymapping);
           }
           break;
 
@@ -89,14 +81,14 @@ export class KeyboardService {
           const commandKeymapping = CommandModeMap.get(keyCombo);
           if (commandKeymapping) {
             keyEvent.preventDefault();
-            this.commandService.executeCommand$.next(commandKeymapping);
+            this.commandService.execute(commandKeymapping);
           }
           break;
       }
     });
   }
 
-  keyComboStringFromKeyEvent(keyEvent: KeyboardEvent): string {
+  private keyComboStringFromKeyEvent(keyEvent: KeyboardEvent): string {
     let result = "";
     if (keyEvent.metaKey) {
       result = result.concat("Meta+");

@@ -262,7 +262,7 @@ export class OutlinerEntryComponent {
       )
       .subscribe(() => this.updateEntryWhenDirty());
 
-    this.commandService.executeCommand$
+    this.commandService.executed$
       .pipe(takeUntilDestroyed())
       .subscribe((command) => {
         switch (command) {
@@ -289,7 +289,7 @@ export class OutlinerEntryComponent {
       this.textBox.nativeElement.focus();
     });
     if (!this.keyboardService.isInsertMode()) {
-      this.commandService.executeCommand$.next(Command.SWITCH_TO_INSERT_MODE);
+      this.commandService.execute(Command.SWITCH_TO_INSERT_MODE);
     }
     if (this.outlinerState.activeBlockIdx() !== this.blockIdx()) {
       this.outlinerState.activeBlockIdx.set(this.blockIdx());

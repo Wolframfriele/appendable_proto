@@ -98,9 +98,7 @@ export class FuzzySearchFieldComponent {
     effect(() => {
       if (this.setFocus()) {
         if (this.switchToInputMode()) {
-          this.commandService.executeCommand$.next(
-            Command.SWITCH_TO_INSERT_MODE,
-          );
+          this.commandService.execute(Command.SWITCH_TO_INSERT_MODE);
         }
         this.searchBox().nativeElement.focus();
       }
@@ -128,14 +126,10 @@ export class FuzzySearchFieldComponent {
         break;
       case "Enter":
         if (this.filterdOptions().length > 0) {
-          this.commandService.executeCommand$.next(
-            Command.SWITCH_TO_NORMAL_MODE,
-          );
+          this.commandService.execute(Command.SWITCH_TO_NORMAL_MODE);
           this.selected.emit(this.filterdOptions()[this.selectedIdx()]);
         } else if (this.allowCreation()) {
-          this.commandService.executeCommand$.next(
-            Command.SWITCH_TO_NORMAL_MODE,
-          );
+          this.commandService.execute(Command.SWITCH_TO_NORMAL_MODE);
           this.selected.emit(this.searchInput());
         }
         break;

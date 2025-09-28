@@ -114,7 +114,7 @@ export class NavigationComponent {
   menuOpen = signal(false);
 
   constructor() {
-    this.commandService.executeCommand$.subscribe((command) => {
+    this.commandService.executed$.subscribe((command) => {
       switch (command) {
         case Command.GO_TO_JOURNAL:
           this.router.navigate(["/"]);

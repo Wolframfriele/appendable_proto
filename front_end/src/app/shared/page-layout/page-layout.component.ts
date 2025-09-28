@@ -67,7 +67,7 @@ export class PageLayoutComponent {
   }
 
   executeCommand(commandValue: string) {
-    this.commandService.executeCommand$.next(Command.SWITCH_TO_NORMAL_MODE);
-    this.commandService.executeCommandFromValue(commandValue);
+    this.commandService.execute(Command.SWITCH_TO_NORMAL_MODE);
+    this.commandService.executeFromValue(commandValue);
   }
 }

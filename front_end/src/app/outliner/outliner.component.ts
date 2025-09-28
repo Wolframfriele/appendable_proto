@@ -55,7 +55,7 @@ export default class OutlinerComponent {
   state = inject(OutlinerStateService);
 
   constructor() {
-    this.commandService.executeCommand$
+    this.commandService.executed$
       .pipe(takeUntilDestroyed())
       .subscribe((command) => {
         switch (command) {
@@ -177,7 +177,7 @@ export default class OutlinerComponent {
         if (entriesInBlock && entriesInBlock.length > 0) {
           this.state.activeEntryIdx.set(entriesInBlock.length - 1);
         }
-        this.commandService.executeCommand$.next(Command.SWITCH_TO_INSERT_MODE);
+        this.commandService.execute(Command.SWITCH_TO_INSERT_MODE);
       });
   }
 
