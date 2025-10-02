@@ -48,6 +48,17 @@ export const routes: Routes = [
     path: "login",
     component: LoginComponent,
     title: "Login",
+    data: { hideHeader: true, hideFooter: true },
   },
-  { path: "**", component: PageNotFoundComponent, title: "Page not found" },
+  {
+    path: "calendar",
+    component: LoginComponent,
+    title: "Login",
+    data: { fullWidthLayout: true },
+  },
+  {
+    path: "**",
+    component: PageNotFoundComponent,
+    title: "Page not found",
+  },
 ];

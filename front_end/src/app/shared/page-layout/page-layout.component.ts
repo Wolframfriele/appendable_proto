@@ -1,5 +1,10 @@
-import { Component, inject } from "@angular/core";
-import { RouterOutlet } from "@angular/router";
+import { Component, inject, signal } from "@angular/core";
+import {
+  ActivatedRoute,
+  NavigationEnd,
+  Router,
+  RouterOutlet,
+} from "@angular/router";
 import { KeyboardService } from "../data/keyboard.service";
 import { Command, CommandService } from "../data/command.service";
 import { HeaderComponent } from "../ui/header/header.component";
@@ -16,7 +21,9 @@ import { StatusBarComponent } from "../../outliner/ui/status-bar/status-bar.comp
     StatusBarComponent,
   ],
   template: `
-    <app-header />
+    @if (!hideHeader()) {
+      <app-header />
+    }
 
     @if (isCommandModeActive) {
       <app-fuzzy-search-field
@@ -28,17 +35,23 @@ import { StatusBarComponent } from "../../outliner/ui/status-bar/status-bar.comp
       />
     }
 
-    <div class="wrapper">
-      <div class="content">
-        <router-outlet></router-outlet>
+    @if (fullWidthLayout()) {
+      <router-outlet></router-outlet>
+    } @else {
+      <div class="wrapper">
+        <div class="content">
+          <router-outlet></router-outlet>
+        </div>
       </div>
-    </div>
+    }
 
-    <app-status-bar />
+    @if (!hideFooter()) {
+      <app-status-bar />
+    }
   `,
   styles: `
     app-fuzzy-search-field {
-      position: absolute;
+      position: fixed;
       top: 40%;
       left: 50%;
       transform: translate(-50%, 0);
@@ -59,8 +72,31 @@ import { StatusBarComponent } from "../../outliner/ui/status-bar/status-bar.comp
   `,
 })
 export class PageLayoutComponent {
-  keyboardService = inject(KeyboardService);
+  private router = inject(Router);
+  private activatedRoute = inject(ActivatedRoute);
+  private keyboardService = inject(KeyboardService);
   commandService = inject(CommandService);
+
+  hideHeader = signal(false);
+  hideFooter = signal(false);
+  fullWidthLayout = signal(false);
+
+  constructor() {
+    this.router.events.subscribe((event) => {
+      if (event instanceof NavigationEnd) {
+        this.hideHeader.set(
+          this.activatedRoute.firstChild?.snapshot.data["hideHeader"] == true,
+        );
+        this.hideFooter.set(
+          this.activatedRoute.firstChild?.snapshot.data["hideFooter"] == true,
+        );
+        this.fullWidthLayout.set(
+          this.activatedRoute.firstChild?.snapshot.data["fullWidthLayout"] ==
+            true,
+        );
+      }
+    });
+  }
 
   get isCommandModeActive() {
     return this.keyboardService.isCommandMode();
